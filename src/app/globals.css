@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+
+/* RESET BÁSICO */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  overflow-x: hidden;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-family: var(--font-sans, "DM Sans"), sans-serif;
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  min-height: 100vh;
+  scroll-behavior: smooth;
+}
+
+/* ================================
+   🎨 TEMA PRETO & DOURADO (ROOT)
+================================ */
+:root {
+  --background: 0 0% 5%;
+  --foreground: 45 20% 96%;
+
+  --primary: 43 70% 50%;
+  --primary-foreground: 0 0% 0%;
+
+  --secondary: 0 0% 8%;
+  --secondary-foreground: 45 20% 96%;
+
+  --accent: 36 100% 50%;
+  --accent-foreground: 0 0% 100%;
+
+  --border: 0 0% 15%;
+  --input: 0 0% 15%;
+  --ring: 43 70% 50%;
+
+  --radius: 12px;
+
+  /* Gradientes e outras variáveis opcionais */
+  --gradient-gold: linear-gradient(
+    135deg,
+    hsl(43 70% 50%) 0%,
+    hsl(45 80% 60%) 50%,
+    hsl(43 70% 42%) 100%
+  );
+  --gradient-black: linear-gradient(
+    180deg,
+    hsl(0 0% 6%) 0%,
+    hsl(0 0% 10%) 100%
+  );
+  --gradient-black-gold: linear-gradient(
+    135deg,
+    hsl(0 0% 8%) 0%,
+    hsl(43 70% 50%) 50%,
+    hsl(0 0% 12%) 100%
+  );
+}
+
+/* ================================
+  ANIMAÇÃO DE GRADIENTE
+================================ */
+@keyframes gradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient 4s ease infinite;
+}
+
+/* ================================
+   📱 MOBILE HELPERS
+================================ */
+.only-mobile {
+  display: block;
+}
+
+@media (min-width: 768px) {
+  .only-mobile {
+    display: none !important;
+  }
+}
+
+/* ================================
+   🔗 LINKS
+================================ */
+a {
+  color: hsl(var(--primary));
+  text-decoration: none;
+  transition: color .15s ease;
+}
+
+a:hover {
+  color: hsl(var(--accent));
+}
+
+/* ================================
+   🔘 BOTÕES
+================================ */
+button,
+.botao {
+  font-family: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border-radius: var(--radius);
+  border: 1px solid transparent;
+  background: transparent;
+  color: inherit;
+  transition: all .15s ease;
+}
+
+.botao--primario {
+  background: hsl(var(--primary));
+  color: hsl(var(--primary-foreground));
+}
+
+
+.botao--primario:hover {
+  background: hsl(var(--primary-600));
+}
+
+.botao--contorno {
+  background: hsl(var(--paper));
+  border-color: hsl(var(--border));
+  color: hsl(0 0% 0%);
+}
+@media (max-width: 768px) {
+
+  /* PRIMÁRIO NO CELULAR */
+  .botao--primario {
+    width: 100%;
+    padding: 0.9rem 1.25rem;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+
+  /* CONTORNO NO CELULAR */
+  .botao--contorno {
+    width: 100%;
+    padding: 0.9rem 1.25rem;
+    font-size: 1rem;
+    border-radius: 10px;
+    background: white;
+  }
+}
+
+.botao--contorno:hover {
+  background: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+/* ================================
+   🎨 CLASSES DE FUNDO
+================================ */
+.bg-laranja-rosa {
+  background-image: var(--grad-laranja-rosa);
+}
+
+.bg-laranja-branco {
+  background-image: var(--grad-laranja-branco);
+}
+
+.bg-grad-background-branco {
+  background-image: var(--grad-background-branco);
+}
