@@ -1,17 +1,24 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { productsService } from "@/services/products";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { productsService } from "@/app/services/products";
+import Navbar from "@/app/components/layout/navbar";
+import Footer from "@/app/components/layout/Footer";
 import { toast } from "react-hot-toast";
-import Link from "next/link";
-import Navbar from "../components/layout/navbar";
-import Footer from "../components/layout/Footer";
+import { useAuthStore } from "@/store/useAuthStore";
+import {
+  MagnifyingGlassIcon,
+  FunnelIcon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
 
 interface Product {
   id: string;
   name: string;
   description: string;
   price: number;
+  discount?: number;
   stock: number;
   category: string;
   brand: string;
@@ -19,194 +26,321 @@ interface Product {
   created_at: string;
 }
 
-interface ProductsResponse {
-  total: number;
-  page: number;
-  page_size: number;
-  products: Product[];
-}
-
 export default function ProductsPage() {
-  const [productsData, setProductsData] =
-    useState<ProductsResponse | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const { user } = useAuthStore();
+  const [products, setProducts] = useState<Product[]>([]);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    page: 1,
-    page_size: 12,
-    category: "",
-    search: "",
-    min_price: "",
-    max_price: "",
-  });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [showFilters, setShowFilters] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
-  useEffect(() => {
-    loadCategories();
-  }, []);
-
-  useEffect(() => {
-    loadProducts();
-  }, [filters.page, filters.category]);
-
-  const loadCategories = async () => {
-    try {
-      const data = await productsService.getCategories();
-      setCategories(data.categories);
-    } catch (error) {
-      console.error("Erro ao carregar categorias:", error);
+  // ✅ Função auxiliar para montar URL da imagem
+  const getImageUrl = (imageUrl: string): string => {
+    const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+    
+    // Se já for uma URL completa, retorna ela mesma
+    if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+      return imageUrl;
     }
-  };
-
-  const loadProducts = async () => {
-    setLoading(true);
-    try {
-      const params: any = {
-        page: filters.page,
-        page_size: filters.page_size,
-      };
-
-      if (filters.category) params.category = filters.category;
-      if (filters.search) params.search = filters.search;
-      if (filters.min_price) params.min_price = parseFloat(filters.min_price);
-      if (filters.max_price) params.max_price = parseFloat(filters.max_price);
-
-      const data = await productsService.getProducts(params);
-      setProductsData(data);
-    } catch (error) {
-      toast.error("Erro ao carregar produtos");
-      console.error(error);
-    } finally {
-      setLoading(false);
+    
+    // Se começar com /, concatena com baseURL
+    if (imageUrl.startsWith('/')) {
+      return `${baseURL}${imageUrl}`;
     }
+    
+    // Caso contrário, adiciona / antes
+    return `${baseURL}/${imageUrl}`;
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFilters({ ...filters, page: 1 });
+  // Carregar produtos
+  useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const data = await productsService.getProducts({
+          skip: 0,
+          limit: 100,
+        });
+
+        let productsList: Product[] = [];
+        
+        if (Array.isArray(data)) {
+          productsList = data;
+        } else if (data?.products && Array.isArray(data.products)) {
+          productsList = data.products;
+        }
+        
+        setProducts(productsList);
+        setFilteredProducts(productsList);
+
+        const uniqueCategories = [
+          ...new Set(productsList.map((p) => p.category).filter(Boolean)),
+        ];
+        
+        setCategories(uniqueCategories);
+
+        const searchQuery = searchParams.get("search");
+        const categoryQuery = searchParams.get("category");
+        
+        if (searchQuery) {
+          setSearchTerm(searchQuery);
+          setActiveSearch(searchQuery);
+        }
+        if (categoryQuery) {
+          setSelectedCategory(categoryQuery);
+        }
+      } catch (error) {
+        console.error("❌ Erro ao carregar produtos:", error);
+        toast.error("Erro ao carregar produtos");
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadProducts();
+  }, [searchParams]);
+
+  // Filtrar produtos
+  useEffect(() => {
+    let result = [...products];
+
+    if (selectedCategory) {
+      result = result.filter((p) => p.category === selectedCategory);
+    }
+
+    if (activeSearch) {
+      const search = activeSearch.toLowerCase();
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(search) ||
+          p.description.toLowerCase().includes(search) ||
+          p.category.toLowerCase().includes(search) ||
+          p.brand.toLowerCase().includes(search)
+      );
+    }
+
+    setFilteredProducts(result);
+  }, [products, selectedCategory, activeSearch]);
+
+  const handleClearFilters = () => {
+    setSelectedCategory("");
+    setSearchTerm("");
+    setActiveSearch("");
+    router.push("/products");
   };
 
-  const handleFilterChange = (key: string, value: string) => {
-    setFilters({ ...filters, [key]: value, page: 1 });
+  const handleSearch = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    setActiveSearch(searchTerm);
   };
+
+  const handleProductClick = (productId: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    if (!user) {
+      toast.error("Faça login ou cadastre-se para ver os detalhes do produto!", {
+        duration: 4000,
+        icon: "🔒",
+      });
+      window.dispatchEvent(new CustomEvent('openAuthModal', { detail: 'login' }));
+      return;
+    }
+
+    console.log("🔍 Redirecionando para produto:", productId);
+    router.push(`/products/${productId}`);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-black">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-400 mb-4"></div>
+        <p className="text-white font-semibold">Carregando produtos...</p>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className="relative min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('/image-fundo-2.jpg')" }}
-    >
-      <div className="fixed inset-0 bg-black/35 pointer-events-none z-0" />
-
+    <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900">
       <Navbar />
-      <main style={{ paddingTop: "2cm" }} className="pb-20 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <h1 className="text-3xl font-bold text-yellow-400 mb-8">
-            Produtos
+
+      <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full mt-20">
+        <div className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold text-yellow-400 mb-3">
+            Todos os Produtos
           </h1>
+          <p className="text-lg text-white/90">
+            {filteredProducts.length}{" "}
+            {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
+          </p>
+        </div>
 
-          <form onSubmit={handleSearch} className="space-y-4 mb-8">
-            <div className="flex flex-col md:flex-row gap-4">
-              <input
-                type="text"
-                placeholder="Nome do produto..."
-                value={filters.search}
-                onChange={(e) =>
-                  setFilters({ ...filters, search: e.target.value })
-                }
-                className="w-full text-black bg-white px-4 py-3 border rounded-lg"
-              />
+        <div className="flex items-center justify-center w-full mb-8">
+          <form onSubmit={handleSearch} className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="relative w-full sm:w-auto">
+                <select
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className="w-full px-8 py-4 bg-transparent text-lg border-2 border-gray-300 rounded-2xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 min-w-[280px] cursor-pointer shadow-lg transition-all hover:border-yellow-400 "
+                  style={{ 
+                    backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
+                    backgroundRepeat: 'no-repeat',
+                    backgroundPosition: 'right 1rem center',
+                    backgroundSize: '1.5rem'
+                  }}
+                >
+                  <option value="">📁 Todas as categorias</option>
+                  {categories.map((cat) => (
+                    <option className="bg-black/50" key={cat} value={cat}>
+                      {cat}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
-              <select
-                value={filters.category}
-                onChange={(e) =>
-                  handleFilterChange("category", e.target.value)
-                }
-                className="w-full md:w-60 px-4 py-3 border rounded-lg bg-white text-black"
-              >
-                <option value="">Todas as categorias</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
+              {(selectedCategory || activeSearch) && (
+                <button
+                  type="button"
+                  onClick={handleClearFilters}
+                  className="w-full sm:w-auto px-8 py-4 bg-red-500 text-white rounded-2xl hover:bg-red-600 transition-all flex items-center justify-center gap-2 font-semibold shadow-lg hover:shadow-xl"
+                >
+                  <XMarkIcon className="w-5 h-5" />
+                  Limpar Filtros
+                </button>
+              )}
+            </div>
 
-              <input
-                type="number"
-                placeholder="Preço mínimo"
-                value={filters.min_price}
-                onChange={(e) =>
-                  setFilters({ ...filters, min_price: e.target.value })
-                }
-                className="w-full md:w-40 px-4 py-3 border rounded-lg bg-white text-black"
-              />
+            {activeSearch && (
+              <div className="text-center">
+                <p className="text-gray-900 bg-yellow-400/90 px-6 py-3 rounded-full inline-block font-semibold shadow-lg">
+                  🔍 Buscando por: "{activeSearch}"
+                </p>
+              </div>
+            )}
+          </form>
+        </div>
 
-              <input
-                type="number"
-                placeholder="Preço máximo"
-                value={filters.max_price}
-                onChange={(e) =>
-                  setFilters({ ...filters, max_price: e.target.value })
-                }
-                className="w-full md:w-40 px-4 py-3 border rounded-lg bg-white text-black"
-              />
-
+        <div className="relative z-0">
+          {filteredProducts.length === 0 ? (
+            <div className="bg-white/90 backdrop-blur-md rounded-3xl p-16 text-center shadow-2xl">
+              <div className="text-8xl mb-6">😔</div>
+              <h3 className="text-3xl font-bold text-gray-700 mb-4">
+                Nenhum produto encontrado
+              </h3>
+              <p className="text-gray-500 text-lg mb-8">
+                {activeSearch ? `Nenhum resultado para "${activeSearch}"` : "Tente ajustar os filtros"}
+              </p>
               <button
-                type="submit"
-                className="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                onClick={handleClearFilters}
+                className="px-8 py-4 bg-yellow-400 text-gray-900 rounded-xl hover:bg-yellow-500 transition-all font-bold text-lg"
               >
-                🔍
+                Limpar Filtros
               </button>
             </div>
-          </form>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map((product) => {
+                const finalPrice = product.discount
+                  ? product.price * (1 - product.discount)
+                  : product.price;
 
-          {[1, 2, 3].map((listIndex) => (
-            <section key={listIndex} className="mb-12">
-              <h2 className="text-xl font-bold mb-4 text-white">
-                Lista {listIndex}
-              </h2>
-
-              <div className="flex gap-6 overflow-x-auto pb-4">
-                {productsData?.products.slice(0, 10).map((product) => (
-                  <Link
-                    key={product.id + listIndex}
-                    href={`/products/${product.id}`}
-                    className="min-w-[220px] bg-white rounded-lg shadow hover:scale-105 transition-transform"
+                return (
+                  <div
+                    key={product.id}
+                    onClick={(e) => handleProductClick(product.id, e)}
+                    className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-2 border-transparent hover:border-yellow-400"
                   >
-                    <div className="aspect-square bg-gray-200 relative">
+                    <div className="aspect-square bg-gray-100 relative overflow-hidden">
                       {product.image_urls?.[0] ? (
                         <img
-                          src={product.image_urls[0]}
+                          src={getImageUrl(product.image_urls[0])}
                           alt={product.name}
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                          onError={(e) => {
+                            const target = e.currentTarget as HTMLImageElement;
+                            console.error("❌ Erro ao carregar imagem:", product.image_urls[0]);
+                            console.error("❌ URL tentada:", getImageUrl(product.image_urls[0]));
+                            target.onerror = null;
+                            target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(product.name)}&size=400&background=1f2937&color=facc15&bold=true`;
+                          }}
+                          onLoad={() => {
+                            console.log("✅ Imagem carregada:", getImageUrl(product.image_urls[0]));
+                          }}
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full text-gray-400">
-                          📦 Sem imagem
+                          📷 Sem imagem
+                        </div>
+                      )}
+
+                      {product.discount && product.discount > 0 && (
+                        <div className="absolute top-3 right-3 bg-red-600 text-white px-3 py-2 rounded-full text-sm font-bold">
+                          -{(product.discount * 100).toFixed(0)}%
+                        </div>
+                      )}
+
+                      {product.stock === 0 && (
+                        <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+                          <span className="text-white font-bold text-xl bg-red-600 px-6 py-3 rounded-full">
+                            Sem Estoque
+                          </span>
                         </div>
                       )}
                     </div>
 
-                    <div className="p-4">
-                      <h3 className="font-semibold line-clamp-2">
+                    <div className="p-5">
+                      <p className="text-xs text-yellow-600 font-semibold mb-2 uppercase">
+                        {product.category}
+                      </p>
+                      <h3 className="font-bold text-xl mb-2 line-clamp-2 text-gray-800 group-hover:text-yellow-600 transition-colors">
                         {product.name}
                       </h3>
-                      <p className="text-sm text-gray-600 line-clamp-2">
+                      <p className="text-sm text-gray-600 mb-4 line-clamp-2">
                         {product.description}
                       </p>
-                      <span className="text-xl font-bold text-blue-600">
-                        R$ {product.price.toFixed(2)}
-                      </span>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
 
-        <Footer />
+                      <div className="border-t border-gray-200 pt-4 mb-3">
+                        {product.discount && product.discount > 0 ? (
+                          <div className="space-y-1">
+                            <p className="text-sm text-gray-400 line-through">
+                              De: R$ {product.price.toFixed(2)}
+                            </p>
+                            <p className="text-3xl font-bold text-green-600">
+                              R$ {finalPrice.toFixed(2)}
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-3xl font-bold text-gray-900">
+                            R$ {product.price.toFixed(2)}
+                          </p>
+                        )}
+                      </div>
+
+                      <p className="text-sm font-semibold">
+                        {product.stock > 0 ? (
+                          <span className="text-green-600">✓ Disponível ({product.stock} un.)</span>
+                        ) : (
+                          <span className="text-red-600">✗ Esgotado</span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </main>
+
+      <Footer />
     </div>
   );
 }

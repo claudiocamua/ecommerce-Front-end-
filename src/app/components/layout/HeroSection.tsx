@@ -30,18 +30,7 @@ export default function HeroSection({ openAuthModal }: HeroProps) {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 mt-4">
-                <Button
-                    className="botao botao--primario"
-                    onClick={() => {
-                        if (typeof window !== "undefined" && window.innerWidth < 768) {
-                            window.location.href = "/register";
-                        } else {
-                            openAuthModal("register");
-                        }
-                    }}
-                >
-                    Cadastrar
-                </Button>
+               
 
                 <Button
                     className="botao--contorno"

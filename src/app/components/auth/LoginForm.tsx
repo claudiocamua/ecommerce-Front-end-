@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { authService } from "@/services/auth";
+import { authService } from "@/app/services/auth";
 import { toast } from "react-hot-toast";
+import Link from "next/link";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -12,8 +13,10 @@ export default function LoginForm() {
     password: "",
   });
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null);
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -22,36 +25,37 @@ export default function LoginForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
     if (!formData.email || !formData.password) {
-      toast.error("Preencha todos os campos");
+      const errorMsg = "Preencha todos os campos";
+      setError(errorMsg);
+      toast.error(errorMsg);
       return;
     }
 
     setLoading(true);
 
     try {
+      console.log("🔐 Tentando fazer login...");
+
       const loginResponse = await authService.login({
         email: formData.email,
         password: formData.password,
       });
 
-      // Salvar token
+      console.log("✅ Login bem-sucedido!");
+
       authService.saveToken(loginResponse.access_token);
 
-      // Se a resposta trouxer dados do usuário, salvar
       if (loginResponse.user) {
         authService.saveUser(loginResponse.user);
       } else {
-        // Caso contrário, buscar do backend
         try {
           const user = await authService.getProfile();
           authService.saveUser(user);
         } catch (profileError) {
-          console.error(
-            "Erro ao buscar perfil, mas login foi feito:",
-            profileError
-          );
+          console.error("Erro ao buscar perfil:", profileError);
         }
       }
 
@@ -61,19 +65,27 @@ export default function LoginForm() {
         window.location.href = "/dashboard";
       }, 1000);
     } catch (error: any) {
-      let message = "Erro ao fazer login";
+      console.error("❌ Erro no login:", error);
+
+      let errorMessage = "Erro ao fazer login";
 
       if (error.response?.data?.detail) {
-        message = error.response.data.detail;
+        errorMessage = error.response.data.detail;
       } else if (error.response?.status === 401) {
-        message = "Email ou senha incorretos";
+        errorMessage = "Email ou senha incorretos";
+      } else if (error.response?.status === 403) {
+        errorMessage = "Email não verificado. Verifique sua caixa de entrada.";
       } else if (error.detail) {
-        message = error.detail;
+        errorMessage = error.detail;
       } else if (error.message) {
-        message = error.message;
+        errorMessage = error.message;
       }
 
-      toast.error(message);
+      setError(errorMessage);
+      toast.error(errorMessage, {
+        duration: 4000,
+        position: "top-center",
+      });
     } finally {
       setLoading(false);
     }
@@ -85,11 +97,30 @@ export default function LoginForm() {
 
   return (
     <div className="space-y-4">
+      {/* Mensagem de erro persistente */}
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-2">
+          <svg
+            className="w-5 h-5 mt-0.5 flex-shrink-0"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+              clipRule="evenodd"
+            />
+          </svg>
+          <span className="text-sm">{error}</span>
+        </div>
+      )}
+
       {/* Botão Google */}
       <button
         type="button"
         onClick={handleGoogleSignIn}
-        className="flex items-center justify-center gap-3 w-full px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        disabled={loading}
+        className="flex items-center justify-center gap-3 w-full px-4 py-3 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
       >
         <svg className="w-5 h-5" viewBox="0 0 24 24">
           <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -111,7 +142,7 @@ export default function LoginForm() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className=" space-y-4 ">
+      <form onSubmit={handleSubmit} className="space-y-4">
         <div>
           <input
             type="email"
@@ -119,7 +150,8 @@ export default function LoginForm() {
             placeholder="Email"
             value={formData.email}
             onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={loading}
+            className="w-full px-4 py-3 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
             required
           />
         </div>
@@ -131,29 +163,52 @@ export default function LoginForm() {
             placeholder="Senha"
             value={formData.password}
             onChange={handleChange}
-            className="w-full px-4 py-3 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            disabled={loading}
+            className="w-full px-4 py-3 border border-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100"
             required
           />
+        </div>
+
+        {/* Link Esqueci minha senha */}
+        <div className="flex justify-end">
+          <Link
+            href="/auth/forgot-password"
+            className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+          >
+            Esqueci minha senha
+          </Link>
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="botao botao--contorno w-full"
+          className="botao botao--contorno w-full disabled:opacity-50"
         >
-          {loading ? "Entrando..." : "Entrar"}
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              Entrando...
+            </span>
+          ) : (
+            "Entrar"
+          )}
         </button>
       </form>
-      <button
-        type="button"
-        onClick={() => {
-          authService.logout();
-          window.location.href = "/";
-        }}
-        className="botao botao--contorno w-full mt-2"
-      >
-        Sair
-      </button>
     </div>
   );
 }

@@ -1,349 +1,244 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { cartService, Cart } from "@/services/cart";
-import { ordersService, ShippingAddress } from "@/services/orders";
-import { authService } from "@/services/auth";
-import { toast } from "react-hot-toast";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-
-const PAYMENT_METHODS = [
-  "Cartão de Crédito",
-  "Cartão de Débito",
-  "PIX",
-  "Boleto Bancário",
-];
-
-const BRAZILIAN_STATES = [
-  "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA",
-  "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI", "RJ", "RN",
-  "RS", "RO", "RR", "SC", "SP", "SE", "TO"
-];
+import { useCart } from "../context/CartContext";
+import { ordersService } from "../services/orders";
+import { toast } from "react-hot-toast";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const [cart, setCart] = useState<Cart | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const { cart, getTotalPrice, clearCart } = useCart();
 
-  const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
-    street: "",
-    number: "",
-    complement: "",
-    neighborhood: "",
-    city: "",
-    state: "SP",
-    zip_code: "",
+  const [formData, setFormData] = useState({
+    payment_method: "pix" as "credit_card" | "debit_card" | "pix" | "boleto",
+    shipping_address: {
+      street: "",
+      number: "",
+      complement: "",
+      neighborhood: "",
+      city: "",
+      state: "",
+      zip_code: "",
+    },
   });
 
-  const [paymentMethod, setPaymentMethod] = useState("Cartão de Crédito");
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (!authService.isAuthenticated()) {
-      toast.error("Faça login para finalizar a compra");
-      router.push("/login");
-      return;
+  function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
+    const { name, value } = e.target;
+
+    if (name.startsWith("address_")) {
+      const addressField = name.replace("address_", "");
+      setFormData((prev) => ({
+        ...prev,
+        shipping_address: {
+          ...prev.shipping_address,
+          [addressField]: value,
+        },
+      }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
-    loadCart();
-  }, []);
+  }
 
-  const loadCart = async () => {
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+
     try {
-      const data = await cartService.getCart();
-      if (!data.items || data.items.length === 0) {
-        toast.error("Seu carrinho está vazio");
-        router.push("/cart");
-        return;
-      }
-      setCart(data);
-    } catch (error: any) {
-      toast.error("Erro ao carregar carrinho");
-      router.push("/cart");
+      const orderData = {
+        user_id: "current_user", // Será preenchido pelo backend
+        items: cart.map((item) => ({
+          product_id: item.id,
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        total: getTotalPrice(),
+        status: "pending" as const,
+        payment_method: formData.payment_method,
+        shipping_address: formData.shipping_address,
+      };
+
+      const order = await ordersService.createOrder(orderData);
+
+      toast.success("Pedido realizado com sucesso!");
+      clearCart();
+      router.push(`/orders/${order._id || order.id}`);
+    } catch (err: any) {
+      console.error("Erro ao finalizar pedido:", err);
+      toast.error(err.message || "Erro ao finalizar pedido");
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  const handleAddressChange = (field: keyof ShippingAddress, value: string) => {
-    setShippingAddress((prev) => ({ ...prev, [field]: value }));
-  };
-
-  const formatZipCode = (value: string) => {
-    const numbers = value.replace(/\D/g, "");
-    if (numbers.length <= 5) return numbers;
-    return `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`;
-  };
-
-  const handleZipCodeChange = (value: string) => {
-    const formatted = formatZipCode(value);
-    handleAddressChange("zip_code", formatted);
-  };
-
-  const validateForm = (): boolean => {
-    if (!shippingAddress.street) {
-      toast.error("Informe o nome da rua");
-      return false;
-    }
-    if (!shippingAddress.number) {
-      toast.error("Informe o número");
-      return false;
-    }
-    if (!shippingAddress.neighborhood) {
-      toast.error("Informe o bairro");
-      return false;
-    }
-    if (!shippingAddress.city) {
-      toast.error("Informe a cidade");
-      return false;
-    }
-    if (!shippingAddress.zip_code || shippingAddress.zip_code.length < 9) {
-      toast.error("Informe um CEP válido");
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!validateForm()) return;
-
-    setSubmitting(true);
-    try {
-      const order = await ordersService.createOrder({
-        shipping_address: {
-          ...shippingAddress,
-          complement: shippingAddress.complement || undefined,
-        },
-        payment_method: paymentMethod,
-      });
-
-      toast.success("Pedido realizado com sucesso!");
-      router.push(`/orders/${order.id}`);
-    } catch (error: any) {
-      console.error("Erro ao criar pedido:", error);
-      toast.error(error.detail || "Erro ao finalizar compra");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (loading) {
+  if (cart.length === 0) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen bg-gray-900 text-white p-6">
+        <div className="max-w-2xl mx-auto text-center py-16">
+          <div className="text-6xl mb-4">🛒</div>
+          <h1 className="text-2xl font-bold mb-4">Carrinho Vazio</h1>
+          <p className="text-gray-400 mb-6">Adicione produtos para finalizar a compra</p>
+          <button
+            onClick={() => router.push("/")}
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
+          >
+            Ir às Compras
+          </button>
+        </div>
       </div>
     );
   }
 
-  if (!cart) return null;
-
-  const shippingFee = 15.0;
-  const total = cart.subtotal + shippingFee;
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <h1 className="text-3xl font-bold text-gray-900">Finalizar Compra</h1>
+    <div className="min-h-screen bg-gray-900 text-white p-6">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-6">Finalizar Compra</h1>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Formulário */}
+          <form onSubmit={handleSubmit} className="bg-gray-800 rounded-lg p-6 space-y-6">
+            <h2 className="text-xl font-bold mb-4">Dados de Entrega</h2>
+
+            <div>
+              <label className="block mb-2">CEP *</label>
+              <input
+                name="address_zip_code"
+                placeholder="00000-000"
+                className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg"
+                onChange={handleChange}
+                value={formData.shipping_address.zip_code}
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block mb-2">Rua *</label>
+              <input
+                name="address_street"
+                placeholder="Rua, Avenida..."
+                className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg"
+                onChange={handleChange}
+                value={formData.shipping_address.street}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2">Número *</label>
+                <input
+                  name="address_number"
+                  placeholder="123"
+                  className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg"
+                  onChange={handleChange}
+                  value={formData.shipping_address.number}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2">Complemento</label>
+                <input
+                  name="address_complement"
+                  placeholder="Apto, Bloco..."
+                  className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg"
+                  onChange={handleChange}
+                  value={formData.shipping_address.complement}
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block mb-2">Bairro *</label>
+              <input
+                name="address_neighborhood"
+                placeholder="Bairro"
+                className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg"
+                onChange={handleChange}
+                value={formData.shipping_address.neighborhood}
+                required
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block mb-2">Cidade *</label>
+                <input
+                  name="address_city"
+                  placeholder="Cidade"
+                  className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg"
+                  onChange={handleChange}
+                  value={formData.shipping_address.city}
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2">Estado *</label>
+                <input
+                  name="address_state"
+                  placeholder="UF"
+                  maxLength={2}
+                  className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg"
+                  onChange={handleChange}
+                  value={formData.shipping_address.state}
+                  required
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block mb-2">Forma de Pagamento *</label>
+              <select
+                name="payment_method"
+                className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg"
+                onChange={handleChange}
+                value={formData.payment_method}
+                required
+              >
+                <option value="pix">PIX</option>
+                <option value="boleto">Boleto</option>
+                <option value="credit_card">Cartão de Crédito</option>
+                <option value="debit_card">Cartão de Débito</option>
+              </select>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:opacity-50 font-bold"
+            >
+              {loading ? "Processando..." : "Finalizar Pedido"}
+            </button>
+          </form>
+
+          {/* Resumo */}
+          <div className="bg-gray-800 rounded-lg p-6 h-fit">
+            <h2 className="text-xl font-bold mb-4">Resumo do Pedido</h2>
+
+            <div className="space-y-4 mb-6">
+              {cart.map((item) => (
+                <div key={item.id} className="flex justify-between text-sm">
+                  <span>
+                    {item.name} x{item.quantity}
+                  </span>
+                  <span className="font-semibold">R$ {(item.price * item.quantity).toFixed(2)}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-gray-700 pt-4">
+              <div className="flex justify-between text-lg font-bold">
+                <span>Total:</span>
+                <span className="text-green-400">R$ {getTotalPrice().toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-
-      <form onSubmit={handleSubmit} className="max-w-7xl mx-auto px-4 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-          <div className="lg:col-span-2 space-y-6">
-          
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Endereço de Entrega</h2>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    CEP *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingAddress.zip_code}
-                    onChange={(e) => handleZipCodeChange(e.target.value)}
-                    placeholder="00000-000"
-                    maxLength={9}
-                    className="w-full px-4 py-2 border rounded-lg"
-                    required
-                  />
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rua *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingAddress.street}
-                    onChange={(e) => handleAddressChange("street", e.target.value)}
-                    placeholder="Nome da rua"
-                    className="w-full px-4 py-2 border rounded-lg"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Número *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingAddress.number}
-                    onChange={(e) => handleAddressChange("number", e.target.value)}
-                    placeholder="123"
-                    className="w-full px-4 py-2 border rounded-lg"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Complemento
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingAddress.complement}
-                    onChange={(e) => handleAddressChange("complement", e.target.value)}
-                    placeholder="Apto, Bloco, etc."
-                    className="w-full px-4 py-2 border rounded-lg"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bairro *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingAddress.neighborhood}
-                    onChange={(e) => handleAddressChange("neighborhood", e.target.value)}
-                    placeholder="Nome do bairro"
-                    className="w-full px-4 py-2 border rounded-lg"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cidade *
-                  </label>
-                  <input
-                    type="text"
-                    value={shippingAddress.city}
-                    onChange={(e) => handleAddressChange("city", e.target.value)}
-                    placeholder="Nome da cidade"
-                    className="w-full px-4 py-2 border rounded-lg"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Estado *
-                  </label>
-                  <select
-                    value={shippingAddress.state}
-                    onChange={(e) => handleAddressChange("state", e.target.value)}
-                    className="w-full px-4 py-2 border rounded-lg"
-                    required
-                  >
-                    {BRAZILIAN_STATES.map((state) => (
-                      <option key={state} value={state}>
-                        {state}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Método de Pagamento</h2>
-
-              <div className="space-y-3">
-                {PAYMENT_METHODS.map((method) => (
-                  <label
-                    key={method}
-                    className="flex items-center gap-3 p-4 border rounded-lg cursor-pointer hover:bg-gray-50"
-                  >
-                    <input
-                      type="radio"
-                      name="payment_method"
-                      value={method}
-                      checked={paymentMethod === method}
-                      onChange={(e) => setPaymentMethod(e.target.value)}
-                      className="w-4 h-4"
-                    />
-                    <span className="font-medium">{method}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow p-6 sticky top-4">
-              <h2 className="text-xl font-semibold mb-4">Resumo do Pedido</h2>
-
-              <div className="space-y-3 mb-4">
-                {cart.items.map((item) => (
-                  <div key={item.product_id} className="flex justify-between text-sm">
-                    <span className="text-gray-600">
-                      {item.quantity}x {item.product_name}
-                    </span>
-                    <span className="font-semibold">
-                      R$ {item.subtotal.toFixed(2)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="border-t pt-4 space-y-3 mb-6">
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="font-semibold">
-                    R$ {cart.subtotal.toFixed(2)}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Frete</span>
-                  <span className="font-semibold">R$ {shippingFee.toFixed(2)}</span>
-                </div>
-                <div className="border-t pt-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-lg font-bold">Total</span>
-                    <span className="text-2xl font-bold text-blue-600">
-                      R$ {total.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting}
-                className="w-full py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold mb-3"
-              >
-                {submitting ? "Processando..." : "Finalizar Pedido"}
-              </button>
-
-              <Link
-                href="/cart"
-                className="block w-full py-3 border border-gray-300 text-center rounded-lg hover:bg-gray-50"
-              >
-                Voltar ao Carrinho
-              </Link>
-            </div>
-          </div>
-        </div>
-      </form>
     </div>
   );
 }

@@ -4,7 +4,9 @@ const nextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'https://ecommerce-backend-qm1k.onrender.com/:path*',
+        destination: process.env.NEXT_PUBLIC_API_URL 
+          ? `${process.env.NEXT_PUBLIC_API_URL}/:path*`
+          : 'http://localhost:8000/:path*',
       },
     ];
   },
@@ -20,6 +22,21 @@ const nextConfig = {
         ],
       },
     ];
+  },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8000',
+        pathname: '/images/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'ecommerce-backend-qm1k.onrender.com',
+        pathname: '/images/**',
+      },
+    ],
   },
 };
 

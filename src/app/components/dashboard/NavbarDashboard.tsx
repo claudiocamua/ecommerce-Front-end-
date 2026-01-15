@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
-import { authService } from "@/services/auth";
+import { authService } from "@/app/services/auth";
 import WelcomeHeader from "./WelcomeHeader";
 
 import {
@@ -17,27 +17,76 @@ import {
   User,
   LogOut,
   ChevronDown,
+  Shield,
 } from "lucide-react";
 
 interface UserProps {
+  is_admin?: boolean;
   full_name: string;
   email: string;
 }
 
 interface NavbarDashboardProps {
-  user: UserProps;
+  user: UserProps | null;
 }
 
 export default function NavbarDashboard({ user }: NavbarDashboardProps) {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+    
+    if (!user) {
+      router.push("/login");
+    }
+  }, [user, router]);
 
   const handleLogout = () => {
     authService.logout();
     toast.success("Logout realizado com sucesso!");
     router.push("/");
   };
+
+  // ✅ PROTEÇÃO DE SEGURANÇA COM VALORES PADRÃO
+  const userName = user?.full_name || user?.email || "Usuário";
+  const userInitial = userName.charAt(0).toUpperCase();
+  const userFirstName = userName.split(" ")[0];
+
+  // ✅ VERIFICAR SE É ADMIN - DEVE SER ESTRITAMENTE true
+  const isAdmin = user?.is_admin === true;
+
+  // ✅ RENDERIZAR PLACEHOLDER APENAS SE NÃO MONTADO
+  if (!isMounted) {
+    return (
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-cartao border-b border-borda shadow-md">
+        <div className="container-custom">
+          <div className="flex justify-between items-center h-16">
+            <div className="text-2xl font-bold text-primario">MinhaLoja.</div>
+            <div className="w-6 h-6 animate-pulse bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
+  // ✅ SE NÃO TIVER USER, REDIRECIONAR MAS AINDA RENDERIZAR NAVBAR
+  if (!user) {
+    return (
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-cartao border-b border-borda shadow-md">
+        <div className="container-custom">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="text-2xl font-bold text-primario">
+              MinhaLoja.
+            </Link>
+            <div className="text-sm text-neutro-frente">Redirecionando...</div>
+          </div>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <>
@@ -49,21 +98,35 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                 MinhaLoja.
               </span>
             </Link>
-            <WelcomeHeader userName={user.full_name} />
+            <WelcomeHeader userName={userName} />
 
             <div className="hidden md:flex items-center gap-6">
               <Link href="/profile" className="nav-link flex items-center gap-2">
                 <User size={25} /> Meu Perfil
               </Link>
-              <Link href="/products" className="nav-link flex items-center gap-2">
+              <Link href="/dashboard/products" className="nav-link flex items-center gap-2">
                 <ShoppingBag size={25} /> Produtos
               </Link>
               <Link href="/cart" className="nav-link flex items-center gap-2">
                 <ShoppingCart size={25} /> Carrinho
               </Link>
-              <Link href="/orders" className="nav-link flex items-center gap-2">
+              <Link href="/dashboard/orders" className="nav-link flex items-center gap-2">
                 <Package size={25} /> Pedidos
               </Link>
+              
+              {/* ✅ Botão Admin só aparece se isAdmin === true */}
+              {isAdmin && (
+                <Link 
+                  href="/admin" 
+                  className="nav-link flex items-center gap-2 text-yellow-400 hover:text-yellow-500 font-bold"
+                  onClick={(e) => {
+                    console.log("🔍 Clicou no botão Admin");
+                    // Não previna o comportamento padrão - deixe o Next.js navegar
+                  }}
+                >
+                  <Shield size={25} /> Admin
+                </Link>
+              )}
             </div>
 
             <div className="flex items-center gap-4">
@@ -73,10 +136,10 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                   className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primario/10 hover:bg-primario/20 transition-colors"
                 >
                   <div className="w-8 h-8 rounded-full bg-primario text-white flex items-center justify-center font-semibold">
-                    {user.full_name.charAt(0).toUpperCase()}
+                    {userInitial}
                   </div>
                   <span className="hidden lg:inline font-medium text-texto">
-                    {user.full_name.split(" ")[0]}
+                    {userFirstName}
                   </span>
                   <ChevronDown
                     size={16}
@@ -87,14 +150,19 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-74   border-borda rounded-lg shadow-xl">
+                  <div className="absolute right-0 mt-2 w-74 bg-cartao border border-borda rounded-lg shadow-xl">
                     <div className="px-4 py-3 border-b border-borda">
                       <p className="font-semibold text-texto">
-                        {user.full_name}
+                        {userName}
                       </p>
                       <p className="text-sm text-neutro-frente">
                         {user.email}
                       </p>
+                      {isAdmin && (
+                        <span className="inline-block mt-2 px-2 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded">
+                          ADMIN
+                        </span>
+                      )}
                     </div>
 
                     <Link
@@ -106,12 +174,22 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                     </Link>
 
                     <Link
-                      href="/orders"
+                      href="/dashboard/orders"
                       className="dropdown-item flex items-center gap-2"
                       onClick={() => setIsProfileOpen(false)}
                     >
                       <Package size={16} /> Meus Pedidos
                     </Link>
+
+                    {isAdmin && (
+                      <Link
+                        href="/admin"
+                        className="dropdown-item flex items-center gap-2 text-yellow-600 border-t border-borda"
+                        onClick={() => setIsProfileOpen(false)}
+                      >
+                        <Shield size={16} /> Administração
+                      </Link>
+                    )}
 
                     <button
                       onClick={handleLogout}
@@ -123,10 +201,9 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                 )}
               </div>
 
-             
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="only-mobile p-2 rounded-lg hover:bg-primario/10 transition-colors"
+                className="md:hidden p-2 rounded-lg hover:bg-primario/10 transition-colors"
               >
                 {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
@@ -136,38 +213,43 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
       </nav>
 
       {isMenuOpen && (
-        <div
-          className={`
-            fixed z-50 left-1/2 top-1/4
-            transform -translate-x-1/6 -translate-y-1/2
-            bg-white  border-borda shadow-lg
-            rounded-xl w-0 max-w-xs
-            p-6 flex flex-col gap-4
-            transition-all duration-300
-          `}
-        >
-          <Link href="/products" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-            <ShoppingBag size={25} /> Produtos
-          </Link>
-          <Link href="/cart" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-            <ShoppingCart size={25} /> Carrinho
-          </Link>
-          <Link href="/orders" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-            <Package size={25} /> Pedidos
-          </Link>
-          <Link href="/profile" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-            <User size={25} /> Meu Perfil
-          </Link>
-          <button
-            onClick={handleLogout}
-            className="mobile-link flex items-center gap-2 text-red-600 border-t border-borda pt-4 mt-2"
-          >
-            <LogOut size={25} /> Sair
-          </button>
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div className="fixed inset-0 bg-black/50" onClick={() => setIsMenuOpen(false)} />
+          <div className="fixed top-16 right-0 left-0 bg-cartao border-b border-borda shadow-lg p-6 flex flex-col gap-4">
+            <Link href="/dashboard/products" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+              <ShoppingBag size={25} /> Produtos
+            </Link>
+            <Link href="/cart" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+              <ShoppingCart size={25} /> Carrinho
+            </Link>
+            <Link href="/dashboard/orders" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+              <Package size={25} /> Pedidos
+            </Link>
+            <Link href="/profile" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+              <User size={25} /> Meu Perfil
+            </Link>
+            
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="mobile-link flex items-center gap-2 text-yellow-500 font-bold border-t border-borda pt-4"
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Shield size={25} /> Administração
+              </Link>
+            )}
+            
+            <button
+              onClick={handleLogout}
+              className="mobile-link flex items-center gap-2 text-red-600 border-t border-borda pt-4 mt-2"
+            >
+              <LogOut size={25} /> Sair
+            </button>
+          </div>
         </div>
       )}
 
-      <div className="h-20" />
+      <div className="h-16" />
     </>
   );
 }

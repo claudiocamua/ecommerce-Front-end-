@@ -1,20 +1,35 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Menu, X, ShoppingBag, Package, User, LogOut } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import Button from "../ui/Button";
 import ModalAuth from "../auth/ModalAuth";
+import { useAuthStore } from "@/store/useAuthStore";
 
 export default function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authType, setAuthType] = useState<"login" | "register">("login");
   const [isOpen, setIsOpen] = useState(false);
 
-  const isAuthenticated = false;
+  const { user, logout } = useAuthStore();
+  const isAuthenticated = !!user;
   const itemCount = 0;
-  const user = { name: "Visitante" };
+
+  // ✅ Escutar evento para abrir modal
+  useEffect(() => {
+    const handleOpenAuth = (e: CustomEvent) => {
+      setAuthType(e.detail || 'login');
+      setAuthOpen(true);
+    };
+
+    window.addEventListener('openAuthModal', handleOpenAuth as EventListener);
+    
+    return () => {
+      window.removeEventListener('openAuthModal', handleOpenAuth as EventListener);
+    };
+  }, []);
 
   const navLinks = [
     { href: "/", label: "Início" },
@@ -22,7 +37,7 @@ export default function Navbar() {
   ];
 
   function handleLogout() {
-    console.log("logout...");
+    logout();
   }
 
   function openLogin() {
@@ -40,7 +55,7 @@ export default function Navbar() {
   }
 
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 backdrop-blur-md shadow-md  border-border">
+    <nav className="fixed top-0 left-0 w-full z-50 backdrop-blur-md shadow-md border-border">
       <div className="container-custom">
         <div className="flex items-center justify-between h-16 md:h-20">
           <Link
@@ -60,7 +75,6 @@ export default function Navbar() {
               </Link>
             ))}
           </div>
-
 
           <div className="hidden md:flex items-center gap-4">
             {!isAuthenticated ? (

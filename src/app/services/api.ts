@@ -1,19 +1,17 @@
 import axios from "axios";
 
-// Verificar variável de ambiente
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://ecommerce-backend-qm1k.onrender.com";
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-console.log('🔍 Conectando ao backend:', API_URL);
+console.log("🔍 Conectando ao backend:", API_URL);
 
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 30000,
 });
 
-// Interceptor para adicionar token em todas as requisições
+// Interceptor para adicionar o token de autenticação
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
@@ -27,25 +25,20 @@ api.interceptors.request.use(
   }
 );
 
-// Interceptor para tratar erros
+// Interceptor para tratar erros de autenticação
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Token inválido ou expirado
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      if (typeof window !== "undefined") {
+      
+      // Evitar loop de redirecionamento
+      if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
         window.location.href = "/login";
       }
     }
-
-    // Extrair mensagem de erro do backend
-    const errorMessage = error.response?.data?.detail || error.message;
-    return Promise.reject({
-      ...error,
-      detail: errorMessage,
-    });
+    return Promise.reject(error);
   }
 );
 
