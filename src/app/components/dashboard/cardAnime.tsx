@@ -31,7 +31,7 @@ interface CardAnimeProps {
 export default function CardAnime({
   products,
   category,
-  maxProducts = 2, // ✅ ALTERADO PARA 2 PRODUTOS
+  maxProducts = 2,
   animationDelay = 0,
   animationType = 5,
 }: CardAnimeProps) {
@@ -101,12 +101,18 @@ export default function CardAnime({
     setTimeout(() => setSelectedProduct(null), 200);
   };
 
+  // ✅ CORRIGIDO: usar addToCart em vez de addItem
   const handleAddToCart = async (productId: string, quantity: number) => {
     try {
-      await cartService.addItem(productId, quantity);
-      toast.success(`${quantity}x produto adicionado ao carrinho!`);
+      console.log("🛒 Adicionando ao carrinho:", { productId, quantity });
+      await cartService.addToCart(productId, quantity);
+      toast.success(`${quantity}x produto adicionado ao carrinho!`, {
+        icon: "🛒",
+        duration: 2000,
+      });
     } catch (error: any) {
-      toast.error(error.detail || "Erro ao adicionar ao carrinho");
+      console.error("❌ Erro ao adicionar:", error);
+      toast.error(error.message || error.detail || "Erro ao adicionar ao carrinho");
     }
   };
 
@@ -114,7 +120,6 @@ export default function CardAnime({
     return null;
   }
 
-  // ✅ CALCULAR DESCONTO CORRETO
   const getDiscountedPrice = (product: Product) => {
     const discountValue = product.discount_percentage || product.discount || 0;
     if (discountValue > 0) {

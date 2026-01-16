@@ -7,8 +7,8 @@ import Link from "next/link";
 import { toast } from "react-hot-toast";
 
 interface Product {
-  id?: string;        // ✅ API retorna "id"
-  _id?: string;       // ✅ Compatibilidade com MongoDB
+  id?: string;        
+  _id?: string;       
   name: string;
   description: string;
   price: number;
@@ -39,7 +39,7 @@ export default function AdminProductsPage() {
 
       const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
       
-      console.log("📡 Carregando produtos de:", `${baseURL}/products`);
+      console.log(" Carregando produtos de:", `${baseURL}/products`);
 
       const res = await fetch(`${baseURL}/products?page_size=100`, {
         headers: {
@@ -49,7 +49,7 @@ export default function AdminProductsPage() {
 
       if (res.ok) {
         const data = await res.json();
-        console.log("✅ Dados recebidos:", data);
+        console.log(" Dados recebidos:", data);
         
         // Verificar se é array ou objeto com products
         const productsList = Array.isArray(data) ? data : data.products || [];
@@ -57,11 +57,11 @@ export default function AdminProductsPage() {
         toast.success(`${productsList.length} produtos carregados`);
       } else {
         const error = await res.json();
-        console.error("❌ Erro:", error);
+        console.error(" Erro:", error);
         toast.error(error.detail || "Erro ao carregar produtos");
       }
     } catch (err) {
-      console.error("❌ Erro:", err);
+      console.error(" Erro:", err);
       toast.error("Erro ao carregar produtos");
     } finally {
       setLoading(false);
@@ -75,7 +75,7 @@ export default function AdminProductsPage() {
       const token = authService.getToken();
       const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-      console.log("🗑️ Deletando produto:", id);
+      console.log(" Deletando produto:", id);
 
       const res = await fetch(`${baseURL}/products/${id}`, {
         method: "DELETE",
@@ -92,21 +92,20 @@ export default function AdminProductsPage() {
         toast.error(error.detail || "Erro ao excluir produto");
       }
     } catch (err) {
-      console.error("❌ Erro:", err);
+      console.error(" Erro:", err);
       toast.error("Erro ao excluir produto");
     }
   }
 
-  // ✅ Função auxiliar para pegar o ID correto
+  // Função auxiliar para pegar o ID correto
   function getProductId(product: Product): string {
     return product.id || product._id || "";
   }
 
-  // ✅ Função auxiliar para montar URL da imagem
+  // Função auxiliar para montar URL da imagem
   function getImageUrl(imageUrl: string): string {
     const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     
-    // Se já for uma URL completa, retorna ela mesma
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       return imageUrl;
     }
@@ -141,7 +140,7 @@ export default function AdminProductsPage() {
               href="/admin/products/new"
               className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
             >
-              ➕ Novo Produto
+               Novo Produto
             </Link>
             <Link
               href="/admin"
@@ -154,14 +153,14 @@ export default function AdminProductsPage() {
 
         {products.length === 0 ? (
           <div className="text-center py-16 bg-gray-800 rounded-lg">
-            <div className="text-6xl mb-4">📦</div>
+            <div className="text-6xl mb-4">prod</div>
             <p className="text-xl text-gray-400 mb-2">Nenhum produto cadastrado</p>
             <p className="text-gray-500 mb-6">Comece adicionando seu primeiro produto</p>
             <Link
               href="/admin/products/new"
               className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition"
             >
-              ➕ Adicionar Produto
+               Adicionar Produto
             </Link>
           </div>
         ) : (
@@ -171,7 +170,7 @@ export default function AdminProductsPage() {
               
               return (
                 <div key={productId} className="bg-gray-800 rounded-lg overflow-hidden shadow-lg">
-                  {/* ✅ Exibir imagem do produto */}
+                  {/* Exibir imagem do produto */}
                   <div className="relative h-48 bg-gray-700">
                     {product.image_urls && product.image_urls.length > 0 ? (
                       <img 
@@ -179,18 +178,18 @@ export default function AdminProductsPage() {
                         alt={product.name}
                         className="w-full h-full object-cover"
                         onError={(e) => {
-                          console.error("❌ Erro ao carregar imagem:", product.image_urls[0]);
-                          console.error("❌ URL completa:", getImageUrl(product.image_urls[0]));
+                          console.error(" Erro ao carregar imagem:", product.image_urls[0]);
+                          console.error(" URL completa:", getImageUrl(product.image_urls[0]));
                           // Fallback se imagem não carregar
                           e.currentTarget.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect fill='%23374151' width='200' height='200'/%3E%3Ctext fill='%239CA3AF' font-size='20' x='50%25' y='50%25' text-anchor='middle' dominant-baseline='middle'%3ESem Imagem%3C/text%3E%3C/svg%3E";
                         }}
                         onLoad={() => {
-                          console.log("✅ Imagem carregada:", product.image_urls[0]);
+                          console.log(" Imagem carregada:", product.image_urls[0]);
                         }}
                       />
                     ) : (
                       <div className="flex items-center justify-center h-full">
-                        <span className="text-gray-400 text-4xl">📷</span>
+                        <span className="text-gray-400 text-4xl">img</span>
                       </div>
                     )}
                     
@@ -228,13 +227,13 @@ export default function AdminProductsPage() {
                         href={`/admin/products/${productId}/edit`}
                         className="flex-1 bg-yellow-600 text-white px-4 py-2 rounded-lg hover:bg-yellow-700 transition text-center font-semibold"
                       >
-                        ✏️ Editar
+                         Editar
                       </Link>
                       <button
                         onClick={() => handleDelete(productId)}
                         className="flex-1 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition font-semibold"
                       >
-                        🗑️ Excluir
+                         Excluir
                       </button>
                     </div>
                   </div>

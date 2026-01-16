@@ -1,15 +1,11 @@
 import axios from "axios";
 
-const isDevelopment = process.env.NODE_ENV === 'development';
-
 const api = axios.create({
-  baseURL: isDevelopment 
-    ? "/api"
-    : process.env.NEXT_PUBLIC_API_URL || "https://ecommerce-backend-qm1k.onrender.com",
+  baseURL: 'http://localhost:8000',  // ✅ Backend FastAPI (porta 8000)
+  // NÃO PODE SER: '/api' ou 'http://localhost:3000/api'
   headers: {
     "Content-Type": "application/json",
   },
-  withCredentials: true,
 });
 
 // ✅ INTERCEPTOR COM LOGS PARA DEBUG

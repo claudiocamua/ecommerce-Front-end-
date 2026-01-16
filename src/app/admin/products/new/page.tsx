@@ -15,7 +15,7 @@ export default function NewProductPage() {
     stock: "",
     category: "",
     gender: "",
-    brand: "", // ✨ ADICIONAR BRAND
+    brand: "", 
     discount_percentage: "",
   });
 
@@ -89,7 +89,6 @@ export default function NewProductPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // ✅ VALIDAÇÕES
     if (formData.name.length < 3) {
       toast.error("O nome deve ter no mínimo 3 caracteres");
       return;
@@ -139,7 +138,7 @@ export default function NewProductPage() {
     try {
       const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-      // ✅ CRIAR FormData COM TODOS OS CAMPOS
+      //  CRIAR FormData COM TODOS OS CAMPOS
       const productFormData = new FormData();
       
       productFormData.append("name", formData.name.trim());
@@ -150,7 +149,7 @@ export default function NewProductPage() {
       productFormData.append("brand", formData.brand || "Sem marca");
       productFormData.append("discount_percentage", formData.discount_percentage || "0");
       
-      // ✅ ADICIONAR IMAGEM (OBRIGATÓRIO)
+      //  ADICIONAR IMAGEM (OBRIGATÓRIO)
       productFormData.append("images", image);
 
       console.log("📤 Criando produto com FormData:");
@@ -163,14 +162,13 @@ export default function NewProductPage() {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
-          // ❌ NÃO ADICIONAR Content-Type! O navegador define automaticamente com boundary
         },
         body: productFormData,
       });
 
       if (!res.ok) {
         const errorData = await res.json();
-        console.error("❌ Erro do backend:", errorData);
+        console.error(" Erro do backend:", errorData);
         
         if (Array.isArray(errorData.detail)) {
           const errors = errorData.detail.map((e: any) => `${e.loc.join('.')}: ${e.msg}`).join(", ");
@@ -181,9 +179,9 @@ export default function NewProductPage() {
       }
 
       const product = await res.json();
-      console.log("✅ Produto criado com sucesso:", product);
+      console.log(" Produto criado com sucesso:", product);
 
-      toast.success("✅ Produto cadastrado com sucesso!");
+      toast.success(" Produto cadastrado com sucesso!");
 
       setTimeout(() => {
         router.push("/admin/products");
@@ -191,7 +189,7 @@ export default function NewProductPage() {
       }, 1500);
 
     } catch (err: any) {
-      console.error("❌ Erro:", err);
+      console.error(" Erro:", err);
       toast.error(err.message || "Erro ao salvar produto");
     } finally {
       setLoading(false);
@@ -297,10 +295,10 @@ export default function NewProductPage() {
               required
             >
               <option value="">Selecione o gênero</option>
-              <option value="Masculino">👔 Masculino</option>
-              <option value="Feminino">👗 Feminino</option>
-              <option value="Infantil">👶 Infantil</option>
-              <option value="Unissex">🎽 Unissex</option>
+              <option value="Masculino"> Masculino</option>
+              <option value="Feminino"> Feminino</option>
+              <option value="Infantil"> Infantil</option>
+              <option value="Unissex"> Unissex</option>
             </select>
           </div>
 
@@ -325,7 +323,7 @@ export default function NewProductPage() {
             </select>
             {formData.gender && formData.category && (
               <p className="text-sm text-blue-400 mt-1">
-                📦 Categoria completa: {formData.gender} - {formData.category}
+                 Categoria completa: {formData.gender} - {formData.category}
               </p>
             )}
           </div>
@@ -357,7 +355,7 @@ export default function NewProductPage() {
             />
             {formData.discount_percentage && parseFloat(formData.discount_percentage) > 0 && (
               <p className="text-sm text-yellow-400 mt-1">
-                💰 Preço com desconto: R$ {(
+                 Preço com desconto: R$ {(
                   parseFloat(formData.price || "0") * 
                   (1 - parseFloat(formData.discount_percentage) / 100)
                 ).toFixed(2)}
@@ -382,7 +380,7 @@ export default function NewProductPage() {
                 />
                 <label htmlFor="image-upload" className="cursor-pointer">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="text-6xl">📸</div>
+                    <div className="text-6xl">img</div>
                     <div>
                       <p className="text-lg font-semibold text-blue-400">
                         Clique para selecionar uma imagem
@@ -408,11 +406,11 @@ export default function NewProductPage() {
                   onClick={removeImage}
                   className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
                 >
-                  🗑️ Remover
+                   Remover
                 </button>
                 {image && (
                   <div className="mt-3 p-3 bg-green-900/20 border border-green-500 rounded-lg">
-                    <p className="text-sm text-green-400 font-semibold">✅ {image.name}</p>
+                    <p className="text-sm text-green-400 font-semibold"> {image.name}</p>
                     <p className="text-xs text-green-300">
                       Tamanho: {(image.size / 1024).toFixed(2)} KB | Tipo: {image.type}
                     </p>
@@ -428,7 +426,7 @@ export default function NewProductPage() {
               disabled={loading}
               className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-semibold transition"
             >
-              {loading ? "⏳ Salvando..." : "💾 Cadastrar Produto"}
+              {loading ? " Salvando..." : " Cadastrar Produto"}
             </button>
             <button
               type="button"
@@ -436,7 +434,7 @@ export default function NewProductPage() {
               disabled={loading}
               className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              ❌ Cancelar
+               Cancelar
             </button>
           </div>
         </form>

@@ -276,7 +276,7 @@ export default function UsuariosPage() {
             <div>
               <h1 className="text-3xl font-bold text-white flex items-center gap-3">
                 <UserIcon className="w-8 h-8 text-yellow-600" />
-                Gerenciar Usuários
+                Gerenciar Usuários 
               </h1>
               <p className="text-white mt-1">
                 Total de {users.length} usuários cadastrados

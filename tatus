@@ -1,0 +1,12 @@
+[33mcommit 4d30ba3fb691f975a6be124f80c35f3a1da13830[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Claudio Sousa <claudiosousacamua@gmail.com>
+Date:   Fri Jan 16 11:03:59 2026 -0300
+
+    feat: adicionar persistência de autenticação e melhorar proxy do carrinho
+    
+    - Adicionar salvamento de token e user no localStorage no AuthService
+    - Implementar fallback para recuperar dados do localStorage
+    - Melhorar tratamento de erros no proxy /api/cart/add
+    - Adicionar verificação de content-type nas respostas
+    - Adicionar logs detalhados para debug
+    - Corrigir método logout para limpar localStorage

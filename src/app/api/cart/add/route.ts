@@ -77,3 +77,30 @@ export async function OPTIONS(request: NextRequest) {
     },
   });
 }
+
+export async function GET(request: NextRequest) {
+  console.log("🔄 Proxy GET /cart");
+  
+  const token = request.headers.get("authorization");
+  
+  try {
+    const response = await fetch(`${BACKEND_URL}/cart/`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": token || ""
+      }
+    });
+
+    const data = await response.json();
+    console.log("✅ Proxy: Dados recebidos do backend:", data);
+    
+    return NextResponse.json(data, { status: response.status });
+  } catch (error) {
+    console.error("❌ Erro no proxy:", error);
+    return NextResponse.json(
+      { message: "Erro ao buscar carrinho" },
+      { status: 500 }
+    );
+  }
+}

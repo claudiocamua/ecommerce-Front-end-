@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "react-hot-toast";
+import ToasterProvider from "@/app/components/ToasterProvider";
 import { CartProvider } from "./context/CartContext";
 
 const inter = Inter({ subsets: ["latin"] });
@@ -22,7 +22,8 @@ export default function RootLayout({
         <CartProvider>
           {children}
         </CartProvider>
-        <Toaster position="top-right" />
+        
+        <ToasterProvider />
       </body>
     </html>
   );

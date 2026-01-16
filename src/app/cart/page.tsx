@@ -102,22 +102,20 @@ export default function CartPage() {
     }
   };
 
-  const removeItem = async (product_id: string) => {
-    if (!confirm("Deseja remover este item do carrinho?")) return;
-
-    setUpdatingItems((prev) => new Set(prev).add(product_id));
+  const removeItem = async (productId: string) => {
     try {
-      const updatedCart = await cartService.removeItem(product_id);
-      setCart(updatedCart);
-      toast.success("Item removido");
-    } catch (error: any) {
-      toast.error(error.response?.data?.detail || "Erro ao remover item");
-    } finally {
-      setUpdatingItems((prev) => {
-        const newSet = new Set(prev);
-        newSet.delete(product_id);
-        return newSet;
+      const updatedCart = await cartService.removeItem(productId);
+      
+      // ✅ GARANTIR QUE items SEMPRE SEJA UM ARRAY
+      setCart({
+        ...updatedCart,
+        items: updatedCart.items || []  // ← ADICIONE ISSO
       });
+      
+      toast.success("Item removido do carrinho");
+    } catch (error: any) {
+      console.error("Erro ao remover item:", error);
+      toast.error(error.message || "Erro ao remover item");
     }
   };
 
@@ -192,7 +190,7 @@ export default function CartPage() {
         <NavbarDashboard user={user} />
 
         <div className="flex-1 overflow-y-auto">
-          {!cart || cart.items.length === 0 ? (
+          {!cart || !cart.items || cart.items.length === 0 ? (
             <div className="min-h-screen flex items-center justify-center">
               <div className="bg-white/10 backdrop-blur-md rounded-3xl p-12 text-center shadow-2xl border border-white/20 max-w-md">
                 <ShoppingCartIcon className="w-20 h-20 mx-auto mb-6 text-yellow-400" />

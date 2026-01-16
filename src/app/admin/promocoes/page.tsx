@@ -99,9 +99,9 @@ export default function AdminPromocoesPage() {
     is_active: true,
     discount_percentage: 0,
     progressive_tiers: [],
-    min_purchase_amount: 0, // 🔥 ADICIONADO
-    buy_quantity: 2, // 🔥 VALOR PADRÃO
-    pay_quantity: 1, // 🔥 VALOR PADRÃO
+    min_purchase_amount: 0,
+    buy_quantity: 2, 
+    pay_quantity: 1, 
   });
 
   useEffect(() => {
@@ -132,12 +132,12 @@ export default function AdminPromocoesPage() {
       setLoading(true);
       
       const data = await promotionsService.getAll();
-      console.log("✅ Promoções carregadas:", data);
+      console.log(" Promoções carregadas:", data);
       
       setPromotions(data);
       toast.success(`${data.length} promoções carregadas!`);
     } catch (error: any) {
-      console.error("❌ Erro ao carregar promoções:", error);
+      console.error(" Erro ao carregar promoções:", error);
       
       if (error.message === "Failed to fetch") {
         toast.error("Erro CORS! Verifique se backend está rodando.");
@@ -193,7 +193,7 @@ export default function AdminPromocoesPage() {
     }
 
     try {
-      // 🔥 CONVERSÃO DE DATAS PARA ISO 8601
+      //  CONVERSÃO DE DATAS PARA ISO 8601
       const startDateISO = new Date(formData.start_date + "T00:00:00").toISOString();
       const endDateISO = new Date(formData.end_date + "T23:59:59").toISOString();
 
@@ -233,24 +233,24 @@ export default function AdminPromocoesPage() {
         payload.progressive_tiers = formData.progressive_tiers;
       }
 
-      console.log("📤 Enviando payload:", payload);
+      console.log(" Enviando payload:", payload);
 
       let result: Promotion;
       if (editingPromotion) {
         result = await promotionsService.update(editingPromotion._id, payload);
-        toast.success("✅ Promoção atualizada!");
+        toast.success(" Promoção atualizada!");
       } else {
         result = await promotionsService.create(payload);
-        toast.success("✅ Promoção criada!");
+        toast.success(" Promoção criada!");
       }
 
-      console.log("✅ Resposta:", result);
+      console.log(" Resposta:", result);
       
       setShowModal(false);
       resetForm();
       loadPromotions();
     } catch (error: any) {
-      console.error("❌ Erro ao salvar promoção:", error);
+      console.error(" Erro ao salvar promoção:", error);
       
       const errorMessage = error.response?.data?.detail || error.message || "Erro ao salvar promoção";
       toast.error(errorMessage);
@@ -306,9 +306,9 @@ export default function AdminPromocoesPage() {
       is_active: true,
       discount_percentage: 0,
       progressive_tiers: [],
-      min_purchase_amount: 0, // 🔥 ADICIONADO
-      buy_quantity: 2, // 🔥 ADICIONADO
-      pay_quantity: 1, // 🔥 ADICIONADO
+      min_purchase_amount: 0, 
+      buy_quantity: 2, 
+      pay_quantity: 1, 
     });
     setEditingPromotion(null);
   };

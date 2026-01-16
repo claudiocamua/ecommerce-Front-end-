@@ -1,19 +1,25 @@
-import { authService } from "./auth";
+import api from './api';
 
 export interface Order {
   _id?: string;
-  id?: string;
+  id: string;
   user_id: string;
   items: Array<{
     product_id: string;
-    name: string;
+    product_name: string;
+    product_price: number;
     quantity: number;
-    price: number;
+    subtotal: number;
+    image_url?: string;
   }>;
   total: number;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
-  payment_method: "credit_card" | "debit_card" | "pix" | "boleto";
-  shipping_address: {
+  subtotal: number;
+  discount: number;
+  shipping: number;
+  status: string;
+  payment_method: string;
+  payment_status: string;
+  shipping_address?: {
     street: string;
     number: string;
     complement?: string;
@@ -22,100 +28,165 @@ export interface Order {
     state: string;
     zip_code: string;
   };
-  created_at?: string;
-  updated_at?: string;
+  created_at: string;
+  updated_at: string;
+  total_amount?: number;
 }
 
-export const ordersService = {
-  async createOrder(orderData: Omit<Order, "_id" | "id" | "created_at" | "updated_at">): Promise<Order> {
-    const token = authService.getToken();
-    const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    const res = await fetch(`${baseURL}/orders`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(orderData),
-    });
-
-    if (!res.ok) {
-      const error = await res.json();
-      throw new Error(error.detail || "Erro ao criar pedido");
-    }
-
-    return res.json();
-  },
-
-  async getMyOrders(): Promise<Order[]> {
-    const token = authService.getToken();
-    const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    const res = await fetch(`${baseURL}/orders/my-orders`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error("Erro ao buscar pedidos");
-    }
-
-    return res.json();
-  },
-
-  async getOrderById(orderId: string): Promise<Order> {
-    const token = authService.getToken();
-    const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    const res = await fetch(`${baseURL}/orders/${orderId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error("Erro ao buscar pedido");
-    }
-
-    return res.json();
-  },
-
-  async getAllOrders(): Promise<Order[]> {
-    const token = authService.getToken();
-    const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    const res = await fetch(`${baseURL}/orders`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-
-    if (!res.ok) {
-      throw new Error("Erro ao buscar pedidos");
-    }
-
-    return res.json();
-  },
-
-  async updateOrderStatus(orderId: string, status: Order["status"]): Promise<Order> {
-    const token = authService.getToken();
-    const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-    const res = await fetch(`${baseURL}/orders/${orderId}/status`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status }),
-    });
-
-    if (!res.ok) {
-      throw new Error("Erro ao atualizar status do pedido");
-    }
-
-    return res.json();
-  },
+// ✅ NORMALIZAR _id PARA id
+const normalizeOrder = (order: any): Order => {
+  const id = order._id || order.id;
+  
+  if (!id) {
+    console.error('⚠️ Pedido sem ID:', order);
+  }
+  
+  return {
+    ...order,
+    id: id,
+    _id: id,
+  };
 };
+
+class OrdersService {
+  async getAllOrders(): Promise<Order[]> {
+    try {
+      console.log('📡 Buscando todos os pedidos (admin)...');
+      const response = await api.get('/orders/admin/all');
+      
+      console.log('📦 Resposta bruta da API:', response.data);
+      
+      const normalizedOrders = response.data.map((order: any) => {
+        const normalized = normalizeOrder(order);
+        console.log(`📦 id: ${normalized.id}`);
+        return normalized;
+      });
+      
+      console.log('✅ Pedidos normalizados:', normalizedOrders);
+      console.log('✅ Exemplo de ID:', normalizedOrders[0]?.id);
+      
+      return normalizedOrders;
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar pedidos:', error);
+      throw error;
+    }
+  }
+
+  async getOrder(orderId: string): Promise<Order> {
+    try {
+      console.log('📡 Buscando pedido:', orderId);
+      const response = await api.get(`/orders/${orderId}`);
+      return normalizeOrder(response.data);
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar pedido:', error);
+      throw error;
+    }
+  }
+
+  async createOrder(orderData: any): Promise<Order> {
+    try {
+      console.log('📝 Criando pedido:', orderData);
+      const response = await api.post('/orders', orderData);
+      return normalizeOrder(response.data);
+    } catch (error: any) {
+      console.error('❌ Erro ao criar pedido:', error);
+      throw error;
+    }
+  }
+
+  async updateOrder(orderId: string, updateData: any): Promise<Order> {
+    try {
+      console.log('📝 Atualizando pedido:', orderId, updateData);
+      
+      if (!orderId || orderId === 'undefined') {
+        throw new Error('ID do pedido é inválido: ' + orderId);
+      }
+      
+      const response = await api.put(`/orders/admin/${orderId}`, updateData);
+      return normalizeOrder(response.data);
+    } catch (error: any) {
+      console.error('❌ Erro ao atualizar pedido:', error);
+      throw error;
+    }
+  }
+
+  async confirmPayment(orderId: string): Promise<any> {
+    try {
+      console.log('💰 Confirmando pagamento para pedido:', orderId);
+      
+      if (!orderId || orderId === 'undefined') {
+        throw new Error('ID do pedido é inválido: ' + orderId);
+      }
+      
+      const response = await api.post(`/orders/admin/${orderId}/confirm-payment`);
+      console.log('✅ Pagamento confirmado:', response.data);
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Erro ao confirmar pagamento:', error);
+      throw error;
+    }
+  }
+
+  async markAsShipped(orderId: string, trackingCode?: string): Promise<any> {
+    try {
+      console.log('🚚 Marcando como enviado:', orderId, trackingCode);
+      
+      if (!orderId || orderId === 'undefined') {
+        throw new Error('ID do pedido é inválido: ' + orderId);
+      }
+      
+      const params = trackingCode ? { tracking_code: trackingCode } : {};
+      const response = await api.post(`/orders/admin/${orderId}/mark-shipped`, null, { params });
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Erro ao marcar como enviado:', error);
+      throw error;
+    }
+  }
+
+  async markAsDelivered(orderId: string): Promise<any> {
+    try {
+      console.log('✅ Marcando como entregue:', orderId);
+      
+      if (!orderId || orderId === 'undefined') {
+        throw new Error('ID do pedido é inválido: ' + orderId);
+      }
+      
+      const response = await api.put(`/orders/${orderId}/status`, { status: 'delivered' });
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Erro ao marcar como entregue:', error);
+      throw error;
+    }
+  }
+
+  async adminCancelOrder(orderId: string, reason?: string): Promise<any> {
+    try {
+      console.log('❌ Cancelando pedido:', orderId, reason);
+      
+      if (!orderId || orderId === 'undefined') {
+        throw new Error('ID do pedido é inválido: ' + orderId);
+      }
+      
+      const params = reason ? { reason } : {};
+      const response = await api.post(`/orders/admin/${orderId}/cancel`, null, { params });
+      return response.data;
+    } catch (error: any) {
+      console.error('❌ Erro ao cancelar pedido:', error);
+      throw error;
+    }
+  }
+
+  async getUserOrders(): Promise<Order[]> {
+    try {
+      console.log('📡 Buscando pedidos do usuário...');
+      const response = await api.get('/orders');
+      return response.data.map(normalizeOrder);
+    } catch (error: any) {
+      console.error('❌ Erro ao buscar pedidos do usuário:', error);
+      throw error;
+    }
+  }
+}
+
+export const ordersService = new OrdersService();

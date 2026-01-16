@@ -16,17 +16,17 @@ export default function EditProductPage() {
     price: "",
     stock: "",
     category: "",
-    gender: "", // ✨ NOVO
+    gender: "",
     discount_percentage: "0",
   })
 
   const [image, setImage] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null) // ✨ NOVO
+  const [imagePreview, setImagePreview] = useState<string | null>(null) 
   const [currentImages, setCurrentImages] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  // ✨ CATEGORIAS POR GÊNERO
+  // CATEGORIAS POR GÊNERO
   const categoriesByGender: Record<string, string[]> = {
     "Masculino": [
       "Camisas",
@@ -108,9 +108,9 @@ export default function EditProductPage() {
 
       if (res.ok) {
         const product = await res.json()
-        console.log("✅ Produto carregado:", product)
+        console.log(" Produto carregado:", product)
 
-        // ✨ SEPARAR GÊNERO DA CATEGORIA (ex: "Masculino - Camisas")
+        //  SEPARAR GÊNERO DA CATEGORIA (ex: "Masculino - Camisas")
         const categoryParts = product.category?.split(" - ") || ["", ""]
         const gender = categoryParts[0] || ""
         const category = categoryParts[1] || product.category || ""
@@ -130,7 +130,7 @@ export default function EditProductPage() {
         router.push("/admin/products")
       }
     } catch (err) {
-      console.error("❌ Erro:", err)
+      console.error(" Erro:", err)
       toast.error("Erro ao carregar produto")
       router.push("/admin/products")
     } finally {
@@ -143,7 +143,7 @@ export default function EditProductPage() {
   ) {
     const { name, value } = e.target
     
-    // ✨ Se mudar o gênero, limpar categoria
+    //  Se mudar o gênero, limpar categoria
     if (name === "gender") {
       setFormData((prev) => ({ ...prev, [name]: value, category: "" }))
     } else {
@@ -167,8 +167,7 @@ export default function EditProductPage() {
       }
 
       setImage(file)
-      
-      // ✨ CRIAR PREVIEW
+    
       const reader = new FileReader()
       reader.onloadend = () => {
         setImagePreview(reader.result as string)
@@ -200,17 +199,16 @@ export default function EditProductPage() {
     try {
       const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-      // ✅ DADOS CORRETOS PARA ATUALIZAÇÃO
       const productData = {
         name: formData.name,
         description: formData.description,
         price: Number(formData.price),
         stock: Number(formData.stock),
-        category: `${formData.gender} - ${formData.category}`, // ✨ Concatenar
+        category: `${formData.gender} - ${formData.category}`, 
         discount_percentage: Number(formData.discount_percentage),
       }
 
-      console.log("📤 Atualizando produto:", productData)
+      console.log(" Atualizando produto:", productData)
 
       const res = await fetch(`${baseURL}/products/${productId}`, {
         method: "PUT",
@@ -223,18 +221,17 @@ export default function EditProductPage() {
 
       if (!res.ok) {
         const errorData = await res.json()
-        console.error("❌ Erro do backend:", errorData)
+        console.error(" Erro do backend:", errorData)
         throw new Error(errorData.detail || "Erro ao atualizar produto")
       }
 
       const updatedProduct = await res.json()
-      console.log("✅ Produto atualizado:", updatedProduct)
+      console.log(" Produto atualizado:", updatedProduct)
 
-      // ✅ UPLOAD DE IMAGEM (se houver)
       if (image) {
-        console.log("📤 Enviando nova imagem...")
+        console.log(" Enviando nova imagem...")
         const imgFormData = new FormData()
-        imgFormData.append("files", image) // ✅ Backend espera "files"
+        imgFormData.append("files", image) 
 
         try {
           const uploadRoute = `${baseURL}/products/${productId}/images`
@@ -248,15 +245,15 @@ export default function EditProductPage() {
           })
 
           if (imgRes.ok) {
-            console.log("✅ Imagem enviada com sucesso")
+            console.log(" Imagem enviada com sucesso")
             toast.success("Produto e imagem atualizados!")
           } else {
             const imgError = await imgRes.text()
-            console.error("⚠️ Erro ao enviar imagem:", imgError)
+            console.error(" Erro ao enviar imagem:", imgError)
             toast.error("Produto atualizado, mas falha ao enviar imagem")
           }
         } catch (imgErr) {
-          console.error("❌ Erro no upload:", imgErr)
+          console.error(" Erro no upload:", imgErr)
           toast.error("Produto atualizado, mas falha ao enviar imagem")
         }
       } else {
@@ -269,7 +266,7 @@ export default function EditProductPage() {
       }, 1500)
 
     } catch (err: any) {
-      console.error("❌ Erro:", err)
+      console.error(" Erro:", err)
       toast.error(err.message || "Erro ao atualizar produto")
     } finally {
       setSaving(false)
@@ -291,7 +288,7 @@ export default function EditProductPage() {
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">✏️ Editar Produto</h1>
+          <h1 className="text-3xl font-bold"> Editar Produto</h1>
           <button
             type="button"
             onClick={() => router.push("/admin/products")}
@@ -358,7 +355,6 @@ export default function EditProductPage() {
             </div>
           </div>
 
-          {/* ✨ SELEÇÃO DE GÊNERO */}
           <div>
             <label className="block mb-2 font-semibold">Gênero *</label>
             <select
@@ -369,14 +365,14 @@ export default function EditProductPage() {
               required
             >
               <option value="">Selecione o gênero</option>
-              <option value="Masculino">👔 Masculino</option>
-              <option value="Feminino">👗 Feminino</option>
-              <option value="Infantil">👶 Infantil</option>
-              <option value="Unissex">🎽 Unissex</option>
+              <option value="Masculino"> Masculino</option>
+              <option value="Feminino"> Feminino</option>
+              <option value="Infantil"> Infantil</option>
+              <option value="Unissex"> Unissex</option>
             </select>
           </div>
 
-          {/* ✨ CATEGORIAS DINÂMICAS */}
+          {/*  CATEGORIAS DINÂMICAS */}
           <div>
             <label className="block mb-2 font-semibold">Categoria *</label>
             <select
@@ -398,7 +394,7 @@ export default function EditProductPage() {
             </select>
             {formData.gender && formData.category && (
               <p className="text-sm text-blue-400 mt-1">
-                📦 Categoria completa: {formData.gender} - {formData.category}
+                 Categoria completa: {formData.gender} - {formData.category}
               </p>
             )}
           </div>
@@ -418,7 +414,7 @@ export default function EditProductPage() {
             />
             {formData.discount_percentage && parseFloat(formData.discount_percentage) > 0 && (
               <p className="text-sm text-yellow-400 mt-1">
-                💰 Preço com desconto: R$ {(
+                 Preço com desconto: R$ {(
                   parseFloat(formData.price || "0") * 
                   (1 - parseFloat(formData.discount_percentage) / 100)
                 ).toFixed(2)}
@@ -443,7 +439,6 @@ export default function EditProductPage() {
             </div>
           )}
 
-          {/* ✨ NOVA IMAGEM COM PREVIEW */}
           <div>
             <label className="block mb-2 font-semibold">Nova Imagem</label>
             
@@ -458,7 +453,7 @@ export default function EditProductPage() {
                 />
                 <label htmlFor="new-image-upload" className="cursor-pointer">
                   <div className="flex flex-col items-center gap-3">
-                    <div className="text-6xl">📸</div>
+                    <div className="text-6xl">img</div>
                     <div>
                       <p className="text-lg font-semibold text-blue-400">
                         Clique para adicionar nova imagem
@@ -484,11 +479,11 @@ export default function EditProductPage() {
                   onClick={removeImage}
                   className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
                 >
-                  🗑️ Remover
+                   Remover
                 </button>
                 {image && (
                   <div className="mt-3 p-3 bg-green-900/20 border border-green-500 rounded-lg">
-                    <p className="text-sm text-green-400 font-semibold">✅ {image.name}</p>
+                    <p className="text-sm text-green-400 font-semibold"> {image.name}</p>
                     <p className="text-xs text-green-300">
                       Tamanho: {(image.size / 1024).toFixed(2)} KB | Tipo: {image.type}
                     </p>
@@ -504,7 +499,7 @@ export default function EditProductPage() {
               disabled={saving}
               className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold transition"
             >
-              {saving ? "⏳ Salvando..." : "💾 Atualizar Produto"}
+              {saving ? " Salvando..." : " Atualizar Produto"}
             </button>
             <button
               type="button"
@@ -512,7 +507,7 @@ export default function EditProductPage() {
               disabled={saving}
               className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 disabled:opacity-50"
             >
-              ❌ Cancelar
+               Cancelar
             </button>
           </div>
         </form>
