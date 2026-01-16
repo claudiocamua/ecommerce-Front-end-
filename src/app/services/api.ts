@@ -1,43 +1,52 @@
 import axios from "axios";
 
-export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-console.log("🔍 Conectando ao backend:", API_URL);
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 const api = axios.create({
-  baseURL: API_URL,
+  baseURL: isDevelopment 
+    ? "/api"
+    : process.env.NEXT_PUBLIC_API_URL || "https://ecommerce-backend-qm1k.onrender.com",
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
-// Interceptor para adicionar o token de autenticação
-api.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    return config;
+// ✅ INTERCEPTOR COM LOGS PARA DEBUG
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem("token");
+  
+  console.log("📤 Requisição:", {
+    url: config.url,
+    method: config.method,
+    hasToken: !!token,
+    tokenPreview: token ? token.substring(0, 20) + "..." : null,
+  });
+  
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  } else {
+    console.warn("⚠️ Nenhum token encontrado no localStorage!");
+  }
+  
+  return config;
+});
+
+// ✅ INTERCEPTOR DE RESPOSTA PARA DEBUG
+api.interceptors.response.use(
+  (response) => {
+    console.log("✅ Resposta:", {
+      url: response.config.url,
+      status: response.status,
+    });
+    return response;
   },
   (error) => {
-    return Promise.reject(error);
-  }
-);
-
-// Interceptor para tratar erros de autenticação
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      
-      // Evitar loop de redirecionamento
-      if (typeof window !== "undefined" && !window.location.pathname.includes("/login")) {
-        window.location.href = "/login";
-      }
-    }
+    console.error("❌ Erro na requisição:", {
+      url: error.config?.url,
+      status: error.response?.status,
+      message: error.response?.data?.detail || error.message,
+    });
     return Promise.reject(error);
   }
 );

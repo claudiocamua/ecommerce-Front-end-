@@ -39,15 +39,16 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
   useEffect(() => {
     setIsMounted(true);
     
-    if (!user) {
-      router.push("/login");
-    }
+    // ✅ REMOVIDO: Não redirecionar automaticamente - deixar a página decidir
+    // if (!user) {
+    //   router.push("/auth");
+    // }
   }, [user, router]);
 
   const handleLogout = () => {
     authService.logout();
     toast.success("Logout realizado com sucesso!");
-    router.push("/");
+    router.push("/"); // Redireciona para home
   };
 
   // ✅ PROTEÇÃO DE SEGURANÇA COM VALORES PADRÃO
@@ -72,7 +73,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
     );
   }
 
-  // ✅ SE NÃO TIVER USER, REDIRECIONAR MAS AINDA RENDERIZAR NAVBAR
+  // ✅ SE NÃO TIVER USER, RENDERIZAR NAVBAR SIMPLES
   if (!user) {
     return (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-cartao border-b border-borda shadow-md">
@@ -81,7 +82,11 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
             <Link href="/" className="text-2xl font-bold text-primario">
               MinhaLoja.
             </Link>
-            <div className="text-sm text-neutro-frente">Redirecionando...</div>
+            <div className="flex gap-4">
+              <Link href="/" className="px-4 py-2 text-sm font-medium text-texto hover:text-primario">
+                Entrar
+              </Link>
+            </div>
           </div>
         </div>
       </nav>
@@ -102,16 +107,16 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
 
             <div className="hidden md:flex items-center gap-6">
               <Link href="/profile" className="nav-link flex items-center gap-2">
-                <User size={25} /> Meu Perfil
+                <User size={20} /> Meu Perfil
               </Link>
               <Link href="/dashboard/products" className="nav-link flex items-center gap-2">
-                <ShoppingBag size={25} /> Produtos
+                <ShoppingBag size={20} /> Produtos
               </Link>
               <Link href="/cart" className="nav-link flex items-center gap-2">
-                <ShoppingCart size={25} /> Carrinho
+                <ShoppingCart size={20} /> Carrinho
               </Link>
               <Link href="/dashboard/orders" className="nav-link flex items-center gap-2">
-                <Package size={25} /> Pedidos
+                <Package size={20} /> Pedidos
               </Link>
               
               {/* ✅ Botão Admin só aparece se isAdmin === true */}
@@ -119,12 +124,8 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                 <Link 
                   href="/admin" 
                   className="nav-link flex items-center gap-2 text-yellow-400 hover:text-yellow-500 font-bold"
-                  onClick={(e) => {
-                    console.log("🔍 Clicou no botão Admin");
-                    // Não previna o comportamento padrão - deixe o Next.js navegar
-                  }}
                 >
-                  <Shield size={25} /> Admin
+                  <Shield size={20} /> Admin
                 </Link>
               )}
             </div>
@@ -150,7 +151,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                 </button>
 
                 {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-74 bg-cartao border border-borda rounded-lg shadow-xl">
+                  <div className="absolute right-0 mt-2 w-64 bg-cartao border border-borda rounded-lg shadow-xl">
                     <div className="px-4 py-3 border-b border-borda">
                       <p className="font-semibold text-texto">
                         {userName}
@@ -193,7 +194,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
 
                     <button
                       onClick={handleLogout}
-                      className="dropdown-item flex items-center gap-2 text-red-600 border-t border-borda"
+                      className="dropdown-item flex items-center gap-2 text-red-600 border-t border-borda w-full text-left"
                     >
                       <LogOut size={16} /> Sair
                     </button>
@@ -217,16 +218,16 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
           <div className="fixed inset-0 bg-black/50" onClick={() => setIsMenuOpen(false)} />
           <div className="fixed top-16 right-0 left-0 bg-cartao border-b border-borda shadow-lg p-6 flex flex-col gap-4">
             <Link href="/dashboard/products" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-              <ShoppingBag size={25} /> Produtos
+              <ShoppingBag size={20} /> Produtos
             </Link>
             <Link href="/cart" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-              <ShoppingCart size={25} /> Carrinho
+              <ShoppingCart size={20} /> Carrinho
             </Link>
             <Link href="/dashboard/orders" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-              <Package size={25} /> Pedidos
+              <Package size={20} /> Pedidos
             </Link>
             <Link href="/profile" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
-              <User size={25} /> Meu Perfil
+              <User size={20} /> Meu Perfil
             </Link>
             
             {isAdmin && (
@@ -235,15 +236,15 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                 className="mobile-link flex items-center gap-2 text-yellow-500 font-bold border-t border-borda pt-4"
                 onClick={() => setIsMenuOpen(false)}
               >
-                <Shield size={25} /> Administração
+                <Shield size={20} /> Administração
               </Link>
             )}
             
             <button
               onClick={handleLogout}
-              className="mobile-link flex items-center gap-2 text-red-600 border-t border-borda pt-4 mt-2"
+              className="mobile-link flex items-center gap-2 text-red-600 border-t border-borda pt-4 mt-2 w-full text-left"
             >
-              <LogOut size={25} /> Sair
+              <LogOut size={20} /> Sair
             </button>
           </div>
         </div>

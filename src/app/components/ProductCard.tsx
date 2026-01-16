@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // ✅ ADICIONAR
 import { cartService } from "../services/cart";
 import { toast } from "react-hot-toast";
 
@@ -20,6 +21,7 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
+  const router = useRouter(); // ✅ ADICIONAR
   const [adding, setAdding] = useState(false);
 
   const handleAddToCart = async (e: React.MouseEvent) => {
@@ -36,13 +38,18 @@ export default function ProductCard({ product }: ProductCardProps) {
       await cartService.addToCart(product.id, 1);
       toast.success("Produto adicionado ao carrinho!");
     } catch (error: any) {
-      toast.error(error.message || "Erro ao adicionar ao carrinho");
+      if (error.response?.status === 401) {
+        toast.error("Faça login para adicionar ao carrinho");
+        router.push("/login");
+      } else {
+        toast.error(error.message || "Erro ao adicionar ao carrinho");
+      }
     } finally {
       setAdding(false);
     }
   };
 
-  // ✅ USAR image_urls[0] ao invés de image
+  //  USAR image_urls[0] ao invés de image
   const imageUrl = product.image_urls?.[0] || "/placeholder-product.png";
 
   console.log("🖼️ ProductCard - URL da imagem:", {

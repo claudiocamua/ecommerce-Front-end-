@@ -16,13 +16,78 @@ export default function EditProductPage() {
     price: "",
     stock: "",
     category: "",
-    discount_percentage: "0", // ✅ CORRIGIDO: era "discount"
+    gender: "", // ✨ NOVO
+    discount_percentage: "0",
   })
 
   const [image, setImage] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null) // ✨ NOVO
   const [currentImages, setCurrentImages] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  // ✨ CATEGORIAS POR GÊNERO
+  const categoriesByGender: Record<string, string[]> = {
+    "Masculino": [
+      "Camisas",
+      "Camisetas",
+      "Polos",
+      "Calças",
+      "Bermudas",
+      "Jeans",
+      "Moletons",
+      "Jaquetas",
+      "Ternos",
+      "Cuecas",
+      "Meias",
+      "Tênis",
+      "Sapatos Sociais",
+      "Chinelos",
+      "Relógios",
+      "Bonés",
+      "Carteiras",
+      "Cintos",
+      "Óculos",
+    ],
+    "Feminino": [
+      "Vestidos",
+      "Blusas",
+      "Camisetas",
+      "Tops",
+      "Calças",
+      "Jeans",
+      "Saias",
+      "Shorts",
+      "Macacões",
+      "Casacos",
+      "Jaquetas",
+      "Lingerie",
+      "Sutiãs",
+      "Calcinhas",
+      "Meias-calças",
+      "Sapatos",
+      "Sandálias",
+      "Tênis",
+      "Bolsas",
+      "Relógios",
+      "Colares",
+      "Brincos",
+      "Anéis",
+      "Óculos",
+    ],
+    "Infantil": [
+      "Roupas Masculinas",
+      "Roupas Femininas",
+      "Calçados",
+      "Acessórios",
+    ],
+    "Unissex": [
+      "Relógios",
+      "Óculos",
+      "Mochilas",
+      "Acessórios",
+    ],
+  }
 
   useEffect(() => {
     loadProduct()
@@ -35,7 +100,6 @@ export default function EditProductPage() {
 
       console.log("📡 Carregando produto:", productId)
 
-      // ✅ BUSCAR PRODUTO DIRETO POR ID
       const res = await fetch(`${baseURL}/products/${productId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -46,13 +110,18 @@ export default function EditProductPage() {
         const product = await res.json()
         console.log("✅ Produto carregado:", product)
 
-        // ✅ PROTEÇÃO DE VALORES UNDEFINED
+        // ✨ SEPARAR GÊNERO DA CATEGORIA (ex: "Masculino - Camisas")
+        const categoryParts = product.category?.split(" - ") || ["", ""]
+        const gender = categoryParts[0] || ""
+        const category = categoryParts[1] || product.category || ""
+
         setFormData({
           name: product.name || "",
           description: product.description || "",
           price: product.price?.toString() || "0",
           stock: product.stock?.toString() || "0",
-          category: product.category || "",
+          gender: gender,
+          category: category,
           discount_percentage: product.discount_percentage?.toString() || "0",
         })
         setCurrentImages(product.image_urls || [])
@@ -73,13 +142,47 @@ export default function EditProductPage() {
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    
+    // ✨ Se mudar o gênero, limpar categoria
+    if (name === "gender") {
+      setFormData((prev) => ({ ...prev, [name]: value, category: "" }))
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }))
+    }
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
-      setImage(e.target.files[0])
+      const file = e.target.files[0]
+      
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("A imagem deve ter no máximo 5MB")
+        return
+      }
+
+      const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"]
+      if (!validTypes.includes(file.type)) {
+        toast.error("Formato inválido. Use JPG, PNG, GIF ou WEBP")
+        return
+      }
+
+      setImage(file)
+      
+      // ✨ CRIAR PREVIEW
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+      
+      toast.success(`Imagem selecionada: ${file.name}`)
     }
+  }
+
+  function removeImage() {
+    setImage(null)
+    setImagePreview(null)
+    toast.info("Nova imagem removida")
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -103,7 +206,7 @@ export default function EditProductPage() {
         description: formData.description,
         price: Number(formData.price),
         stock: Number(formData.stock),
-        category: formData.category,
+        category: `${formData.gender} - ${formData.category}`, // ✨ Concatenar
         discount_percentage: Number(formData.discount_percentage),
       }
 
@@ -131,28 +234,40 @@ export default function EditProductPage() {
       if (image) {
         console.log("📤 Enviando nova imagem...")
         const imgFormData = new FormData()
-        imgFormData.append("file", image)
+        imgFormData.append("files", image) // ✅ Backend espera "files"
 
-        // ✅ CORRIGIDO: URL correta para upload
-        const imgRes = await fetch(`${baseURL}/uploads/products/${productId}`, {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          body: imgFormData,
-        })
+        try {
+          const uploadRoute = `${baseURL}/products/${productId}/images`
+          
+          const imgRes = await fetch(uploadRoute, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            body: imgFormData,
+          })
 
-        if (!imgRes.ok) {
-          const imgError = await imgRes.json()
-          console.error("⚠️ Erro ao enviar imagem:", imgError)
+          if (imgRes.ok) {
+            console.log("✅ Imagem enviada com sucesso")
+            toast.success("Produto e imagem atualizados!")
+          } else {
+            const imgError = await imgRes.text()
+            console.error("⚠️ Erro ao enviar imagem:", imgError)
+            toast.error("Produto atualizado, mas falha ao enviar imagem")
+          }
+        } catch (imgErr) {
+          console.error("❌ Erro no upload:", imgErr)
           toast.error("Produto atualizado, mas falha ao enviar imagem")
-        } else {
-          console.log("✅ Imagem enviada com sucesso")
         }
+      } else {
+        toast.success("Produto atualizado com sucesso!")
       }
 
-      toast.success("Produto atualizado com sucesso!")
-      router.push("/admin/products")
+      setTimeout(() => {
+        router.push("/admin/products")
+        router.refresh()
+      }, 1500)
+
     } catch (err: any) {
       console.error("❌ Erro:", err)
       toast.error(err.message || "Erro ao atualizar produto")
@@ -175,7 +290,16 @@ export default function EditProductPage() {
   return (
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl font-bold mb-6">✏️ Editar Produto</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">✏️ Editar Produto</h1>
+          <button
+            type="button"
+            onClick={() => router.push("/admin/products")}
+            className="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700"
+          >
+            ← Voltar
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="bg-gray-800 rounded-lg p-6 space-y-6">
           <div>
@@ -183,7 +307,7 @@ export default function EditProductPage() {
             <input
               name="name"
               placeholder="Nome do produto"
-              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white"
+              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
               onChange={handleChange}
               value={formData.name}
               required
@@ -195,7 +319,7 @@ export default function EditProductPage() {
             <textarea
               name="description"
               placeholder="Descrição"
-              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white"
+              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
               onChange={handleChange}
               value={formData.description}
               rows={4}
@@ -212,7 +336,7 @@ export default function EditProductPage() {
                 step="0.01"
                 min="0"
                 placeholder="Preço"
-                className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white"
+                className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
                 onChange={handleChange}
                 value={formData.price}
                 required
@@ -226,7 +350,7 @@ export default function EditProductPage() {
                 type="number"
                 min="0"
                 placeholder="Estoque"
-                className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white"
+                className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
                 onChange={handleChange}
                 value={formData.stock}
                 required
@@ -234,53 +358,49 @@ export default function EditProductPage() {
             </div>
           </div>
 
+          {/* ✨ SELEÇÃO DE GÊNERO */}
+          <div>
+            <label className="block mb-2 font-semibold">Gênero *</label>
+            <select
+              name="gender"
+              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+              onChange={handleChange}
+              value={formData.gender}
+              required
+            >
+              <option value="">Selecione o gênero</option>
+              <option value="Masculino">👔 Masculino</option>
+              <option value="Feminino">👗 Feminino</option>
+              <option value="Infantil">👶 Infantil</option>
+              <option value="Unissex">🎽 Unissex</option>
+            </select>
+          </div>
+
+          {/* ✨ CATEGORIAS DINÂMICAS */}
           <div>
             <label className="block mb-2 font-semibold">Categoria *</label>
             <select
               name="category"
-              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white"
+              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none disabled:opacity-50"
               onChange={handleChange}
               value={formData.category}
               required
+              disabled={!formData.gender}
             >
-              <option value="">Selecione uma categoria</option>
-              <optgroup label="👗 Feminino">
-                <option value="Vestidos">Vestidos</option>
-                <option value="Blusas Femininas">Blusas Femininas</option>
-                <option value="Shorts Femininos">Shorts Femininos</option>
-                <option value="Calças Femininas">Calças Femininas</option>
-                <option value="Saias">Saias</option>
-                <option value="Conjuntos Femininos">Conjuntos Femininos</option>
-              </optgroup>
-              <optgroup label="👔 Masculino">
-                <option value="Camisas Masculinas">Camisas Masculinas</option>
-                <option value="Camisetas Masculinas">Camisetas Masculinas</option>
-                <option value="Calças Masculinas">Calças Masculinas</option>
-                <option value="Shorts Masculinos">Shorts Masculinos</option>
-                <option value="Bermudas">Bermudas</option>
-                <option value="Conjuntos Masculinos">Conjuntos Masculinos</option>
-              </optgroup>
-              <optgroup label="👟 Calçados">
-                <option value="Calçados Femininos">Calçados Femininos</option>
-                <option value="Calçados Masculinos">Calçados Masculinos</option>
-                <option value="Tênis">Tênis</option>
-                <option value="Sandálias">Sandálias</option>
-                <option value="Sapatos">Sapatos</option>
-              </optgroup>
-              <optgroup label="⌚ Acessórios">
-                <option value="Acessórios Femininos">Acessórios Femininos</option>
-                <option value="Acessórios Masculinos">Acessórios Masculinos</option>
-                <option value="Relógios">Relógios</option>
-                <option value="Óculos">Óculos</option>
-                <option value="Bolsas">Bolsas</option>
-              </optgroup>
-              <optgroup label="📱 Eletrônicos">
-                <option value="Smartphones">Smartphones</option>
-                <option value="Fones de Ouvido">Fones de Ouvido</option>
-                <option value="Smartwatch">Smartwatch</option>
-              </optgroup>
-              <option value="Outros">Outros</option>
+              <option value="">
+                {formData.gender ? "Selecione uma categoria" : "Primeiro selecione o gênero"}
+              </option>
+              {formData.gender && categoriesByGender[formData.gender]?.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
+            {formData.gender && formData.category && (
+              <p className="text-sm text-blue-400 mt-1">
+                📦 Categoria completa: {formData.gender} - {formData.category}
+              </p>
+            )}
           </div>
 
           <div>
@@ -292,12 +412,21 @@ export default function EditProductPage() {
               min="0"
               max="100"
               placeholder="0"
-              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white"
+              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
               onChange={handleChange}
               value={formData.discount_percentage}
             />
+            {formData.discount_percentage && parseFloat(formData.discount_percentage) > 0 && (
+              <p className="text-sm text-yellow-400 mt-1">
+                💰 Preço com desconto: R$ {(
+                  parseFloat(formData.price || "0") * 
+                  (1 - parseFloat(formData.discount_percentage) / 100)
+                ).toFixed(2)}
+              </p>
+            )}
           </div>
 
+          {/* ✨ IMAGENS ATUAIS */}
           {currentImages.length > 0 && (
             <div>
               <label className="block mb-2 font-semibold">Imagens Atuais</label>
@@ -305,7 +434,7 @@ export default function EditProductPage() {
                 {currentImages.map((url, index) => (
                   <img
                     key={index}
-                    src={url.startsWith('http') ? url : `http://localhost:8000${url}`}
+                    src={url.startsWith('http') ? url : `${process.env.NEXT_PUBLIC_API_URL}${url}`}
                     alt={`Imagem ${index + 1}`}
                     className="w-full h-24 object-cover rounded border border-gray-600"
                   />
@@ -314,29 +443,74 @@ export default function EditProductPage() {
             </div>
           )}
 
+          {/* ✨ NOVA IMAGEM COM PREVIEW */}
           <div>
             <label className="block mb-2 font-semibold">Nova Imagem</label>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageChange}
-              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700"
-            />
-            {image && <p className="mt-2 text-sm text-green-400">✅ {image.name}</p>}
+            
+            {!imagePreview ? (
+              <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleImageChange}
+                  id="new-image-upload"
+                  className="hidden"
+                />
+                <label htmlFor="new-image-upload" className="cursor-pointer">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="text-6xl">📸</div>
+                    <div>
+                      <p className="text-lg font-semibold text-blue-400">
+                        Clique para adicionar nova imagem
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        JPG, PNG, GIF, WEBP - máx 5MB
+                      </p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative w-full h-64 bg-gray-700 rounded-lg overflow-hidden">
+                  <img
+                    src={imagePreview}
+                    alt="Preview nova imagem"
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                >
+                  🗑️ Remover
+                </button>
+                {image && (
+                  <div className="mt-3 p-3 bg-green-900/20 border border-green-500 rounded-lg">
+                    <p className="text-sm text-green-400 font-semibold">✅ {image.name}</p>
+                    <p className="text-xs text-green-300">
+                      Tamanho: {(image.size / 1024).toFixed(2)} KB | Tipo: {image.type}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-4 pt-4 border-t border-gray-700">
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold"
+              className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 font-semibold transition"
             >
               {saving ? "⏳ Salvando..." : "💾 Atualizar Produto"}
             </button>
             <button
               type="button"
               onClick={() => router.push("/admin/products")}
-              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700"
+              disabled={saving}
+              className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 disabled:opacity-50"
             >
               ❌ Cancelar
             </button>

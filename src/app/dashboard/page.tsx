@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/app/services/auth";
-import { productsService } from "@/app/services/products";
 import Footer from "../components/layout/Footer";
 import { toast } from "react-hot-toast";
 import NavbarDashboard from "../components/dashboard/NavbarDashboard";
@@ -27,9 +26,10 @@ interface Product {
   description: string;
   price: number;
   discount?: number;
+  discount_percentage?: number;
   stock: number;
   category: string;
-  brand: string;
+  brand?: string;
   image_urls: string[];
   created_at: string;
 }
@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
+  const [categories, setCategories] = useState<string[]>([]); // ✅ ADICIONADO
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -79,17 +80,60 @@ export default function DashboardPage() {
     loadUserData();
   }, [router]);
 
+  // ✅ CARREGAR TODOS OS PRODUTOS COM PAGINAÇÃO
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const data = await productsService.getProducts({
-          skip: 0,
-          limit: 100,
-        });
+        setLoadingProducts(true);
+        const token = authService.getToken();
+        const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-        setAllProducts(data.products);
+        let allProductsList: Product[] = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
+          const res = await fetch(`${baseURL}/products/?page=${currentPage}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!res.ok) throw new Error("Erro ao carregar produtos");
+
+          const data = await res.json();
+
+          if (data.products && Array.isArray(data.products)) {
+            // ✅ MAPEAR _id PARA id
+            const mappedProducts = data.products.map((p: any) => ({
+              ...p,
+              id: p._id || p.id,  // Garante que sempre terá id
+            }));
+            allProductsList = [...allProductsList, ...mappedProducts];
+            totalPages = data.pages || 1;
+          } else if (Array.isArray(data)) {
+            // ✅ MAPEAR _id PARA id
+            const mappedProducts = data.map((p: any) => ({
+              ...p,
+              id: p._id || p.id,
+            }));
+            allProductsList = [...allProductsList, ...mappedProducts];
+            break;
+          }
+
+          currentPage++;
+        } while (currentPage <= totalPages);
+
+        console.log(`✅ Dashboard: ${allProductsList.length} produtos carregados`);
+        setAllProducts(allProductsList);
+
+        // ✅ EXTRAIR CATEGORIAS ÚNICAS
+        const uniqueCategories = [...new Set(allProductsList.map((p) => p.category))].filter(Boolean);
+        console.log(`✅ ${uniqueCategories.length} categorias encontradas:`, uniqueCategories);
+        setCategories(uniqueCategories);
       } catch (error) {
         console.error("Erro ao carregar produtos:", error);
+        toast.error("Erro ao carregar produtos");
       } finally {
         setLoadingProducts(false);
       }
@@ -151,9 +195,9 @@ export default function DashboardPage() {
           <main className="container-custom py-8">
             <div className="text-center mb-8">
               <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-3 flex items-center justify-center gap-3">
-                <SparklesIcon className="w-10 h-10" />
+                <SparklesIcon className="w-10 h-10 animate-pulse" />
                 Categorias em Destaque
-                <SparklesIcon className="w-10 h-10" />
+                <SparklesIcon className="w-10 h-10 animate-pulse" />
               </h1>
             </div>
 
@@ -165,164 +209,77 @@ export default function DashboardPage() {
               <div className="flex justify-center items-center py-12">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
               </div>
+            ) : categories.length === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-white text-xl">Nenhuma categoria disponível</p>
+              </div>
             ) : (
               <>
-                {/* Layout Desktop: 3 cards de cada lado */}
+                {/* ✅ LAYOUT DESKTOP: 2 CARDS DE CADA LADO COM CATEGORIAS DIFERENTES */}
                 <div className="hidden lg:block">
-                  <div className="relative min-h-[1400px] w-full">
-                    {/* Cards da Esquerda */}
-                    <div className="absolute left-4 xl:left-10 top-0 w-72 xl:w-80 flex flex-col gap-10">
-                      <CardAnime
-                        products={allProducts}
-                        category="Blusas Femininas"
-                        maxProducts={4}
-                        animationDelay={0.2}
-                        animationType={5}
-                      />
-                      <CardAnime
-                        products={allProducts}
-                        category="Calças Femininas"
-                        maxProducts={4}
-                        animationDelay={0.4}
-                        animationType={5}
-                      />
-                      <CardAnime
-                        products={allProducts}
-                        category="Bijuterias"
-                        maxProducts={4}
-                        animationDelay={0.6}
-                        animationType={5}
-                      />
+                  <div className="relative min-h-[700px] w-full">
+                    {/* ✅ Cards da Esquerda - Primeiras 2 categorias */}
+                    <div className="absolute left-4 xl:left-10 top-0 w-64 xl:w-72 flex flex-col gap-6">
+                      {categories.slice(0, 2).map((category, index) => (
+                        <CardAnime
+                          key={category}
+                          products={allProducts}
+                          category={category}
+                          maxProducts={2}
+                          animationDelay={0.1 + index * 0.2}
+                          animationType={5}
+                        />
+                      ))}
                     </div>
 
-                    {/* Cards da Direita */}
-                    <div className="absolute right-4 xl:right-10 top-0 w-72 xl:w-80 flex flex-col gap-10">
-                      <CardAnime
-                        products={allProducts}
-                        category="Relógios"
-                        maxProducts={4}
-                        animationDelay={0.2}
-                        animationType={5}
-                      />
-                      <CardAnime
-                        products={allProducts}
-                        category="Camisas Masculinas"
-                        maxProducts={4}
-                        animationDelay={0.4}
-                        animationType={5}
-                      />
-                      <CardAnime
-                        products={allProducts}
-                        category="Calças Masculinas"
-                        maxProducts={4}
-                        animationDelay={0.6}
-                        animationType={5}
-                      />
+                    {/* ✅ Cards da Direita - Próximas 2 categorias */}
+                    <div className="absolute right-4 xl:right-10 top-0 w-64 xl:w-72 flex flex-col gap-6">
+                      {categories.slice(2, 4).map((category, index) => (
+                        <CardAnime
+                          key={category}
+                          products={allProducts}
+                          category={category}
+                          maxProducts={2}
+                          animationDelay={0.2 + index * 0.2}
+                          animationType={5}
+                        />
+                      ))}
                     </div>
                   </div>
                 </div>
 
-                {/* Layout Tablet: 2 colunas com 3 cards cada */}
+                {/* ✅ LAYOUT TABLET: 2 COLUNAS */}
                 <div className="hidden md:block lg:hidden">
-                  <div className="grid grid-cols-2 gap-8 mx-auto px-4">
-                    <div className="flex flex-col gap-12">
+                  <div className="grid grid-cols-2 gap-6 mx-auto px-4 max-w-3xl">
+                    {categories.slice(0, 4).map((category, index) => (
                       <CardAnime
+                        key={category}
                         products={allProducts}
-                        category="Blusas Femininas"
-                        maxProducts={4}
-                        animationDelay={0.1}
+                        category={category}
+                        maxProducts={2}
+                        animationDelay={0.1 + index * 0.1}
                         animationType={5}
                       />
-                      <CardAnime
-                        products={allProducts}
-                        category="Calças Femininas"
-                        maxProducts={4}
-                        animationDelay={0.3}
-                        animationType={5}
-                      />
-                      <CardAnime
-                        products={allProducts}
-                        category="Bijuterias"
-                        maxProducts={4}
-                        animationDelay={0.5}
-                        animationType={5}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-12">
-                      <CardAnime
-                        products={allProducts}
-                        category="Relógios"
-                        maxProducts={4}
-                        animationDelay={0.2}
-                        animationType={5}
-                      />
-                      <CardAnime
-                        products={allProducts}
-                        category="Camisas Masculinas"
-                        maxProducts={4}
-                        animationDelay={0.4}
-                        animationType={5}
-                      />
-                      <CardAnime
-                        products={allProducts}
-                        category="Calças Masculinas"
-                        maxProducts={4}
-                        animationDelay={0.6}
-                        animationType={5}
-                      />
-                    </div>
+                    ))}
                   </div>
                 </div>
 
-                {/* Layout Mobile: 2 colunas centralizada */}
+                {/* ✅ LAYOUT MOBILE: 1 COLUNA */}
                 <div className="block md:hidden">
-                  <div className="grid grid-cols-2 items-center gap-10 px-6 max-w-sm mx-auto">
-                    <CardAnime
-                      products={allProducts}
-                      category="Blusas Femininas"
-                      maxProducts={4}
-                      animationDelay={0.1}
-                      animationType={5}
-                    />
-                    <CardAnime
-                      products={allProducts}
-                      category="Calças Femininas"
-                      maxProducts={4}
-                      animationDelay={0.2}
-                      animationType={5}
-                    />
-                    <CardAnime
-                      products={allProducts}
-                      category="Bijuterias"
-                      maxProducts={4}
-                      animationDelay={0.3}
-                      animationType={5}
-                    />
-                    <CardAnime
-                      products={allProducts}
-                      category="Relógios"
-                      maxProducts={4}
-                      animationDelay={0.4}
-                      animationType={5}
-                    />
-                    <CardAnime
-                      products={allProducts}
-                      category="Camisas Masculinas"
-                      maxProducts={4}
-                      animationDelay={0.5}
-                      animationType={5}
-                    />
-                    <CardAnime
-                      products={allProducts}
-                      category="Calças Masculinas"
-                      maxProducts={4}
-                      animationDelay={0.6}
-                      animationType={5}
-                    />
+                  <div className="flex flex-col gap-6 px-4 max-w-sm mx-auto">
+                    {categories.slice(0, 4).map((category, index) => (
+                      <CardAnime
+                        key={category}
+                        products={allProducts}
+                        category={category}
+                        maxProducts={2}
+                        animationDelay={0.1 + index * 0.1}
+                        animationType={5}
+                      />
+                    ))}
                   </div>
                 </div>
 
-                {/* Espaçamento para o footer */}
                 <div className="h-24"></div>
               </>
             )}

@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation"; // ✅ ADICIONAR
 import { XMarkIcon, ShoppingCartIcon, CreditCardIcon, ChevronLeftIcon, ChevronRightIcon } from "@heroicons/react/24/outline";
+import { toast } from "react-hot-toast"; // ✅ ADICIONAR
 
 interface Product {
   id: string;
@@ -10,36 +12,78 @@ interface Product {
   price: number;
   stock: number;
   category: string;
-  brand: string;
-  discount: number;
+  brand?: string; // ✅ OPCIONAL
+  discount?: number; // ✅ OPCIONAL
+  discount_percentage?: number; // ✅ ADICIONADO
   image_urls: string[];
   created_at: string;
 }
 
 interface ProductModalProps {
-  product: Product;
+  product: {
+    id: string; // ✅ Certifique-se de que existe
+    name: string;
+    description: string;
+    price: number;
+    discount?: number;
+    discount_percentage?: number;
+    stock: number;
+    category: string;
+    brand?: string;
+    image_urls: string[];
+  };
   isOpen: boolean;
   onClose: () => void;
   getImageUrl: (url: string) => string | null;
-  onAddToCart: (productId: string, quantity: number) => void;
+  onAddToCart: (productId: string, quantity: number) => Promise<void>; // ✅ Correto
 }
 
 export default function ProductModal({ product, isOpen, onClose, getImageUrl, onAddToCart }: ProductModalProps) {
+  const router = useRouter(); // ✅ ADICIONAR
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [adding, setAdding] = useState(false); // ✅ ADICIONAR
 
   if (!isOpen) return null;
 
-  const finalPrice = product.price * (1 - (product.discount || 0));
+  // ✅ CORRIGIDO: Usar discount_percentage
+  const discountValue = product.discount_percentage || product.discount || 0;
+  const finalPrice = discountValue > 0
+    ? product.price * (1 - discountValue / 100)
+    : product.price;
 
-  const handleAddToCart = () => {
-    onAddToCart(product.id, quantity);
-    onClose();
+  const handleAddToCart = async () => {
+    if (!product) return;
+    
+    try {
+      setAdding(true);
+      await onAddToCart(product.id, quantity); // ✅ CERTIFIQUE-SE DE USAR product.id
+      toast.success(`${quantity}x ${product.name} adicionado ao carrinho!`);
+      onClose();
+    } catch (error: any) {
+      console.error("❌ Erro no modal:", error);
+      toast.error(error.message || "Erro ao adicionar ao carrinho");
+    } finally {
+      setAdding(false);
+    }
   };
 
-  const handleBuyNow = () => {
-    onAddToCart(product.id, quantity);
-    window.location.href = "/cart";
+  const handleBuyNow = async () => {
+    if (product.stock === 0) {
+      toast.error("Produto sem estoque");
+      return;
+    }
+
+    setAdding(true);
+    try {
+      await onAddToCart(product.id, quantity);
+      toast.success("Produto adicionado! Redirecionando...");
+      onClose();
+      router.push("/cart");
+    } catch (error: any) {
+      toast.error(error.message || "Erro ao adicionar ao carrinho");
+      setAdding(false);
+    }
   };
 
   const nextImage = () => {
@@ -99,9 +143,9 @@ export default function ProductModal({ product, isOpen, onClose, getImageUrl, on
                 </>
               )}
 
-              {product.discount > 0 && (
+              {discountValue > 0 && (
                 <div className="absolute top-3 right-3 bg-red-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-                  -{(product.discount * 100).toFixed(0)}% OFF
+                  -{discountValue.toFixed(0)}% OFF
                 </div>
               )}
             </div>
@@ -111,7 +155,7 @@ export default function ProductModal({ product, isOpen, onClose, getImageUrl, on
               <div className="grid grid-cols-4 gap-2">
                 {product.image_urls.slice(0, 4).map((img, index) => (
                   <div
-                    key={index}
+                    key={img}  // ✅ USAR URL DA IMAGEM COMO KEY ÚNICA
                     onClick={() => setSelectedImage(index)}
                     className={`aspect-square bg-gray-800 rounded cursor-pointer overflow-hidden border-2 transition ${
                       selectedImage === index ? "border-yellow-400 scale-105" : "border-gray-700 hover:border-gray-600"
@@ -146,7 +190,7 @@ export default function ProductModal({ product, isOpen, onClose, getImageUrl, on
 
             {/* Preço */}
             <div className="mb-4 pb-4 border-b border-gray-700">
-              {product.discount > 0 ? (
+              {discountValue > 0 ? (
                 <>
                   <p className="text-xs text-gray-500 line-through mb-1">
                     R$ {product.price.toFixed(2)}
@@ -225,22 +269,31 @@ export default function ProductModal({ product, isOpen, onClose, getImageUrl, on
             <div className="space-y-2">
               <button
                 onClick={handleAddToCart}
-                disabled={product.stock === 0}
+                disabled={product.stock === 0 || adding}
                 className={`w-full py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition shadow-lg ${
-                  product.stock > 0
+                  product.stock > 0 && !adding
                     ? "bg-blue-600 text-white hover:bg-blue-700"
                     : "bg-gray-700 text-gray-500 cursor-not-allowed"
                 }`}
               >
-                <ShoppingCartIcon className="w-5 h-5" />
-                Adicionar ao Carrinho
+                {adding ? (
+                  <>
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                    Adicionando...
+                  </>
+                ) : (
+                  <>
+                    <ShoppingCartIcon className="w-5 h-5" />
+                    Adicionar ao Carrinho
+                  </>
+                )}
               </button>
 
               <button
                 onClick={handleBuyNow}
-                disabled={product.stock === 0}
+                disabled={product.stock === 0 || adding}
                 className={`w-full py-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition shadow-lg ${
-                  product.stock > 0
+                  product.stock > 0 && !adding
                     ? "bg-green-600 text-white hover:bg-green-700"
                     : "bg-gray-700 text-gray-500 cursor-not-allowed"
                 }`}

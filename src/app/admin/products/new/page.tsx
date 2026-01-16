@@ -14,30 +14,53 @@ export default function NewProductPage() {
     price: "",
     stock: "",
     category: "",
+    gender: "",
+    brand: "", // ✨ ADICIONAR BRAND
     discount_percentage: "",
   });
 
   const [image, setImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const categoriesByGender: Record<string, string[]> = {
+    "Masculino": [
+      "Camisas", "Camisetas", "Polos", "Calças", "Bermudas", "Jeans",
+      "Moletons", "Jaquetas", "Ternos", "Cuecas", "Meias", "Tênis",
+      "Sapatos Sociais", "Chinelos", "Relógios", "Bonés", "Carteiras",
+      "Cintos", "Óculos",
+    ],
+    "Feminino": [
+      "Vestidos", "Blusas", "Camisetas", "Tops", "Calças", "Jeans",
+      "Saias", "Shorts", "Macacões", "Casacos", "Jaquetas", "Lingerie",
+      "Sutiãs", "Calcinhas", "Meias-calças", "Sapatos", "Sandálias",
+      "Tênis", "Bolsas", "Relógios", "Colares", "Brincos", "Anéis", "Óculos",
+    ],
+    "Infantil": ["Roupas Masculinas", "Roupas Femininas", "Calçados", "Acessórios"],
+    "Unissex": ["Relógios", "Óculos", "Mochilas", "Acessórios"],
+  };
 
   function handleChange(
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    
+    if (name === "gender") {
+      setFormData((prev) => ({ ...prev, [name]: value, category: "" }));
+    } else {
+      setFormData((prev) => ({ ...prev, [name]: value }));
+    }
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       
-      // ✅ VALIDAR TAMANHO (máx 5MB)
       if (file.size > 5 * 1024 * 1024) {
         toast.error("A imagem deve ter no máximo 5MB");
         return;
       }
 
-      // ✅ VALIDAR TIPO
       const validTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif", "image/webp"];
       if (!validTypes.includes(file.type)) {
         toast.error("Formato inválido. Use JPG, PNG, GIF ou WEBP");
@@ -46,14 +69,27 @@ export default function NewProductPage() {
 
       console.log("📷 Imagem selecionada:", file.name, file.size, "bytes");
       setImage(file);
+      
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+      
       toast.success(`Imagem selecionada: ${file.name}`);
     }
+  }
+
+  function removeImage() {
+    setImage(null);
+    setImagePreview(null);
+    toast.info("Imagem removida");
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
-    // ✅ VALIDAÇÃO FRONTEND
+    // ✅ VALIDAÇÕES
     if (formData.name.length < 3) {
       toast.error("O nome deve ter no mínimo 3 caracteres");
       return;
@@ -74,8 +110,18 @@ export default function NewProductPage() {
       return;
     }
 
+    if (!formData.gender) {
+      toast.error("Selecione o gênero");
+      return;
+    }
+
     if (!formData.category) {
       toast.error("Selecione uma categoria");
+      return;
+    }
+
+    if (!image) {
+      toast.error("Selecione pelo menos uma imagem do produto!");
       return;
     }
 
@@ -93,27 +139,33 @@ export default function NewProductPage() {
     try {
       const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-      // ✅ FORMATO CORRETO PARA O BACKEND
-      const productData = {
-        name: formData.name.trim(),
-        description: formData.description.trim(),
-        price: parseFloat(formData.price),
-        stock: parseInt(formData.stock),
-        category: formData.category,
-        discount_percentage: formData.discount_percentage 
-          ? parseFloat(formData.discount_percentage) 
-          : 0,
-      };
+      // ✅ CRIAR FormData COM TODOS OS CAMPOS
+      const productFormData = new FormData();
+      
+      productFormData.append("name", formData.name.trim());
+      productFormData.append("description", formData.description.trim());
+      productFormData.append("price", formData.price);
+      productFormData.append("stock", formData.stock);
+      productFormData.append("category", `${formData.gender} - ${formData.category}`);
+      productFormData.append("brand", formData.brand || "Sem marca");
+      productFormData.append("discount_percentage", formData.discount_percentage || "0");
+      
+      // ✅ ADICIONAR IMAGEM (OBRIGATÓRIO)
+      productFormData.append("images", image);
 
-      console.log("📤 Criando produto:", productData);
+      console.log("📤 Criando produto com FormData:");
+      console.log("- Nome:", formData.name);
+      console.log("- Preço:", formData.price);
+      console.log("- Categoria:", `${formData.gender} - ${formData.category}`);
+      console.log("- Imagem:", image.name);
 
       const res = await fetch(`${baseURL}/products/`, {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
+          // ❌ NÃO ADICIONAR Content-Type! O navegador define automaticamente com boundary
         },
-        body: JSON.stringify(productData),
+        body: productFormData,
       });
 
       if (!res.ok) {
@@ -129,61 +181,13 @@ export default function NewProductPage() {
       }
 
       const product = await res.json();
-      console.log("✅ Produto criado:", product);
+      console.log("✅ Produto criado com sucesso:", product);
 
-      // ✅ Pegar ID correto (_id do MongoDB)
-      const productId = product._id || product.id;
+      toast.success("✅ Produto cadastrado com sucesso!");
 
-      if (!productId) {
-        console.error("❌ ID do produto não encontrado:", product);
-        toast.error("Produto criado, mas ID não retornado pelo backend");
-        setLoading(false);
-        return;
-      }
-
-      // ✅ Upload da imagem - CORRIGIDO
-      if (image) {
-        console.log("📤 Enviando imagem para produto ID:", productId);
-        const imgFormData = new FormData();
-        imgFormData.append("files", image); // ✅ Backend espera "files" (plural)
-
-        try {
-          // ✅ ROTA CORRETA: /products/{id}/images
-          const uploadRoute = `${baseURL}/products/${productId}/images`;
-          console.log(`📤 URL de upload: ${uploadRoute}`);
-          
-          const imgRes = await fetch(uploadRoute, {
-            method: "POST",
-            headers: {
-              Authorization: `Bearer ${token}`,
-              // ✅ NÃO enviar Content-Type, deixar o browser definir com boundary
-            },
-            body: imgFormData,
-          });
-
-          const imgResponseText = await imgRes.text();
-          console.log("📥 Resposta do upload:", imgResponseText);
-
-          if (imgRes.ok) {
-            const uploadResult = JSON.parse(imgResponseText);
-            console.log("✅ Imagem enviada com sucesso!", uploadResult);
-            toast.success("Produto e imagem salvos com sucesso!");
-          } else {
-            console.warn(`⚠️ Falha no upload (${imgRes.status}):`, imgResponseText);
-            toast.error(`Produto criado, mas erro ao enviar imagem: ${imgResponseText}`);
-          }
-        } catch (err) {
-          console.error("❌ Erro no upload da imagem:", err);
-          toast.error("Produto criado, mas erro ao enviar imagem");
-        }
-      } else {
-        toast.success("Produto cadastrado com sucesso!");
-      }
-
-      // ✅ Aguardar um pouco antes de redirecionar
       setTimeout(() => {
         router.push("/admin/products");
-        router.refresh(); // ✅ Força refresh para ver o produto novo
+        router.refresh();
       }, 1500);
 
     } catch (err: any) {
@@ -234,7 +238,7 @@ export default function NewProductPage() {
             </label>
             <textarea
               name="description"
-              placeholder="Descreva o produto com detalhes (material, características, benefícios)..."
+              placeholder="Descreva o produto com detalhes..."
               className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
               onChange={handleChange}
               value={formData.description}
@@ -284,25 +288,58 @@ export default function NewProductPage() {
           </div>
 
           <div>
+            <label className="block mb-2 font-semibold">Gênero *</label>
+            <select
+              name="gender"
+              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+              onChange={handleChange}
+              value={formData.gender}
+              required
+            >
+              <option value="">Selecione o gênero</option>
+              <option value="Masculino">👔 Masculino</option>
+              <option value="Feminino">👗 Feminino</option>
+              <option value="Infantil">👶 Infantil</option>
+              <option value="Unissex">🎽 Unissex</option>
+            </select>
+          </div>
+
+          <div>
             <label className="block mb-2 font-semibold">Categoria *</label>
             <select
               name="category"
-              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none disabled:opacity-50"
               onChange={handleChange}
               value={formData.category}
               required
+              disabled={!formData.gender}
             >
-              <option value="">Selecione uma categoria</option>
-              <option value="Moda">Moda</option>
-              <option value="Moda Íntima">Moda Íntima</option>
-              <option value="Infantil">Infantil</option>
-              <option value="Vestidos">Vestidos</option>
-              <option value="Blusas">Blusas</option>
-              <option value="Calças">Calças</option>
-              <option value="Acessórios">Acessórios</option>
-              <option value="Camisas Masculinas">Camisas Masculinas</option>
-              <option value="Relógios">Relógios</option>
+              <option value="">
+                {formData.gender ? "Selecione uma categoria" : "Primeiro selecione o gênero"}
+              </option>
+              {formData.gender && categoriesByGender[formData.gender]?.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
             </select>
+            {formData.gender && formData.category && (
+              <p className="text-sm text-blue-400 mt-1">
+                📦 Categoria completa: {formData.gender} - {formData.category}
+              </p>
+            )}
+          </div>
+
+          <div>
+            <label className="block mb-2 font-semibold">Marca <span className="text-gray-400 text-sm">- Opcional</span></label>
+            <input
+              name="brand"
+              type="text"
+              placeholder="Ex: Nike, Adidas..."
+              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white focus:border-blue-500 focus:outline-none"
+              onChange={handleChange}
+              value={formData.brand}
+            />
           </div>
 
           <div>
@@ -330,28 +367,59 @@ export default function NewProductPage() {
 
           <div>
             <label className="block mb-2 font-semibold">
-              Imagem do Produto <span className="text-gray-400 text-sm">- Opcional (máx 5MB)</span>
+              Imagem do Produto * <span className="text-sm text-red-400">(OBRIGATÓRIO - máx 5MB)</span>
             </label>
-            <input
-              type="file"
-              accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-              onChange={handleImageChange}
-              className="w-full bg-gray-700 border border-gray-600 p-3 rounded-lg text-white file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:bg-blue-600 file:text-white hover:file:bg-blue-700 file:cursor-pointer"
-            />
-            {image && (
-              <div className="mt-3 p-4 bg-green-900/20 border border-green-500 rounded-lg flex items-center gap-3">
-                <div className="text-3xl">📷</div>
-                <div>
-                  <p className="text-sm text-green-400 font-semibold">✅ {image.name}</p>
-                  <p className="text-xs text-green-300">
-                    Tamanho: {(image.size / 1024).toFixed(2)} KB | Tipo: {image.type}
-                  </p>
+            
+            {!imagePreview ? (
+              <div className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
+                <input
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  onChange={handleImageChange}
+                  id="image-upload"
+                  className="hidden"
+                  required
+                />
+                <label htmlFor="image-upload" className="cursor-pointer">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="text-6xl">📸</div>
+                    <div>
+                      <p className="text-lg font-semibold text-blue-400">
+                        Clique para selecionar uma imagem
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        JPG, PNG, GIF, WEBP - máx 5MB
+                      </p>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="relative w-full h-64 bg-gray-700 rounded-lg overflow-hidden">
+                  <img
+                    src={imagePreview}
+                    alt="Preview"
+                    className="w-full h-full object-contain"
+                  />
                 </div>
+                <button
+                  type="button"
+                  onClick={removeImage}
+                  className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
+                >
+                  🗑️ Remover
+                </button>
+                {image && (
+                  <div className="mt-3 p-3 bg-green-900/20 border border-green-500 rounded-lg">
+                    <p className="text-sm text-green-400 font-semibold">✅ {image.name}</p>
+                    <p className="text-xs text-green-300">
+                      Tamanho: {(image.size / 1024).toFixed(2)} KB | Tipo: {image.type}
+                    </p>
+                  </div>
+                )}
               </div>
             )}
-            <p className="text-xs text-gray-500 mt-2">
-              Formatos aceitos: JPG, PNG, GIF, WEBP
-            </p>
           </div>
 
           <div className="flex gap-4 pt-4 border-t border-gray-700">

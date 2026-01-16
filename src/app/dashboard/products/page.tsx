@@ -13,6 +13,7 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   XMarkIcon,
+  ArrowPathIcon, // ✅ ADICIONADO
 } from "@heroicons/react/24/outline";
 
 interface User {
@@ -30,9 +31,10 @@ interface Product {
   description: string;
   price: number;
   discount?: number;
+  discount_percentage?: number; // ✨ ADICIONADO
   stock: number;
   category: string;
-  brand: string;
+  brand?: string; // ✨ OPCIONAL
   image_urls: string[];
   created_at: string;
 }
@@ -50,31 +52,25 @@ export default function ProductsPage() {
   const [categories, setCategories] = useState<string[]>([]);
   const [showFilters, setShowFilters] = useState(false);
   
-  // Estados para o modal
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // ✅ Função auxiliar para montar URL da imagem
   const getImageUrl = (imageUrl: string): string | null => {
     const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     
     if (!imageUrl) return null;
     
-    // Se já for uma URL completa, retorna ela mesma
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       return imageUrl;
     }
     
-    // Se começar com /, concatena com baseURL
     if (imageUrl.startsWith('/')) {
       return `${baseURL}${imageUrl}`;
     }
     
-    // Caso contrário, adiciona / antes
     return `${baseURL}/${imageUrl}`;
   };
 
-  // Carregar dados do usuário
   useEffect(() => {
     const loadUserData = async () => {
       try {
@@ -104,36 +100,79 @@ export default function ProductsPage() {
     loadUserData();
   }, [router]);
 
-  // Carregar produtos
+  // ✅ CARREGAR PRODUTOS - CORRIGIDO COM PAGINAÇÃO
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const data = await productsService.getProducts({
-          skip: 0,
-          limit: 100,
-        });
+        setLoadingProducts(true);
+        console.log("📡 Buscando produtos...");
 
-        let productsList: Product[] = [];
+        const token = authService.getToken();
+        const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
         
-        if (Array.isArray(data)) {
-          productsList = data;
-        } else if (data?.products && Array.isArray(data.products)) {
-          productsList = data.products;
-        }
-        
-        setProducts(productsList);
-        setFilteredProducts(productsList);
+        let allProducts: Product[] = [];
+        let currentPage = 1;
+        let totalPages = 1;
 
-        const uniqueCategories = [
-          ...new Set(productsList.map((p) => p.category).filter(Boolean)),
-        ];
+        do {
+          console.log(`📄 Buscando página ${currentPage}...`);
+          
+          const res = await fetch(`${baseURL}/products/?page=${currentPage}`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+
+          if (!res.ok) {
+            const errorData = await res.json();
+            console.error("❌ Erro da API:", errorData);
+            throw new Error("Erro ao carregar produtos");
+          }
+
+          const data = await res.json();
+          
+          // ✅ MAPEAR _id PARA id
+          if (data.products && Array.isArray(data.products)) {
+            const mappedProducts = data.products.map((p: any) => ({
+              ...p,
+              id: p._id || p.id, // ✅ USAR _id SE EXISTIR, SENÃO id
+            }));
+            allProducts = [...allProducts, ...mappedProducts];
+            totalPages = data.pages || 1;
+            console.log(`✅ Página ${currentPage}/${totalPages}: ${mappedProducts.length} produtos`);
+          } else if (Array.isArray(data)) {
+            const mappedProducts = data.map((p: any) => ({
+              ...p,
+              id: p._id || p.id, // ✅ USAR _id SE EXISTIR, SENÃO id
+            }));
+            allProducts = [...allProducts, ...mappedProducts];
+            console.log(`✅ Página ${currentPage}: ${mappedProducts.length} produtos (sem paginação)`);
+            break;
+          }
+
+          currentPage++;
+        } while (currentPage <= totalPages);
+
+        console.log(`✅ TOTAL: ${allProducts.length} produtos carregados de ${totalPages} páginas`);
+        console.log("📦 Primeiros 3 produtos:", allProducts.slice(0, 3));
         
+        setProducts(allProducts);
+        setFilteredProducts(allProducts);
+
+        const allCategories = allProducts.map((p) => p.category).filter(Boolean);
+        const uniqueCategories = [...new Set(allCategories)].sort();
+        
+        console.log("📁 Categorias únicas encontradas:", uniqueCategories);
+        console.log("📁 Total de categorias:", uniqueCategories.length);
         setCategories(uniqueCategories);
 
         const categoryFromUrl = searchParams.get("categoria");
         if (categoryFromUrl) {
+          console.log("🔗 Categoria da URL:", categoryFromUrl);
           setSelectedCategory(categoryFromUrl);
         }
+
+        toast.success(`${allProducts.length} produtos carregados`);
       } catch (error) {
         console.error("❌ Erro ao carregar produtos:", error);
         toast.error("Erro ao carregar produtos");
@@ -149,58 +188,137 @@ export default function ProductsPage() {
     }
   }, [user, searchParams]);
 
-  // Filtrar produtos
+  // ✅ NOVA FUNÇÃO PARA RECARREGAR PRODUTOS
+  const handleRefresh = async () => {
+    if (loadingProducts) return; // Evita múltiplos cliques
+
+    try {
+      setLoadingProducts(true);
+      const token = authService.getToken();
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      
+      let allProducts: Product[] = [];
+      let currentPage = 1;
+      let totalPages = 1;
+
+      do {
+        const res = await fetch(`${baseURL}/products/?page=${currentPage}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) throw new Error("Erro ao carregar produtos");
+
+        const data = await res.json();
+        
+        // ✅ MAPEAR _id PARA id
+        if (data.products && Array.isArray(data.products)) {
+          const mappedProducts = data.products.map((p: any) => ({
+            ...p,
+            id: p._id || p.id,
+          }));
+          allProducts = [...allProducts, ...mappedProducts];
+          totalPages = data.pages || 1;
+        } else if (Array.isArray(data)) {
+          const mappedProducts = data.map((p: any) => ({
+            ...p,
+            id: p._id || p.id,
+          }));
+          allProducts = [...allProducts, ...mappedProducts];
+          break;
+        }
+
+        currentPage++;
+      } while (currentPage <= totalPages);
+
+      setProducts(allProducts);
+      setFilteredProducts(allProducts);
+
+      const allCategories = allProducts.map((p) => p.category).filter(Boolean);
+      const uniqueCategories = [...new Set(allCategories)].sort();
+      setCategories(uniqueCategories);
+
+      toast.success(`✅ Atualizado! ${allProducts.length} produtos`);
+    } catch (error) {
+      console.error("❌ Erro ao atualizar:", error);
+      toast.error("Erro ao atualizar produtos");
+    } finally {
+      setLoadingProducts(false);
+    }
+  };
+
+  // ✅ FILTRAR PRODUTOS - MELHORADO
   useEffect(() => {
+    console.log("🔍 Aplicando filtros...");
+    console.log("📝 Busca:", searchTerm);
+    console.log("📁 Categoria:", selectedCategory);
+
     if (!Array.isArray(products) || products.length === 0) {
+      console.log("⚠️ Nenhum produto disponível para filtrar");
       setFilteredProducts([]);
       return;
     }
 
     let result = [...products];
 
+    // ✅ FILTRO POR CATEGORIA
     if (selectedCategory) {
-      result = result.filter((p) => p.category === selectedCategory);
+      result = result.filter((p) => {
+        const match = p.category === selectedCategory;
+        if (!match) {
+          console.log(`❌ Produto "${p.name}" não corresponde à categoria "${selectedCategory}"`);
+        }
+        return match;
+      });
+      console.log(`📁 ${result.length} produtos após filtro de categoria`);
     }
 
-    if (searchTerm) {
-      const search = searchTerm.toLowerCase();
-      result = result.filter(
-        (p) =>
-          p.name.toLowerCase().includes(search) ||
-          p.description.toLowerCase().includes(search) ||
-          p.category.toLowerCase().includes(search) ||
-          p.brand.toLowerCase().includes(search)
-      );
+    // ✅ FILTRO POR BUSCA (melhorado)
+    if (searchTerm && searchTerm.trim()) {
+      const search = searchTerm.toLowerCase().trim();
+      result = result.filter((p) => {
+        const nameMatch = p.name?.toLowerCase().includes(search);
+        const descMatch = p.description?.toLowerCase().includes(search);
+        const catMatch = p.category?.toLowerCase().includes(search);
+        const brandMatch = p.brand?.toLowerCase().includes(search);
+        
+        return nameMatch || descMatch || catMatch || brandMatch;
+      });
+      console.log(`🔍 ${result.length} produtos após filtro de busca`);
     }
 
+    console.log(`✅ Total de produtos filtrados: ${result.length}`);
     setFilteredProducts(result);
   }, [products, selectedCategory, searchTerm]);
 
   const handleClearFilters = () => {
+    console.log("🧹 Limpando filtros...");
     setSelectedCategory("");
     setSearchTerm("");
     router.push("/dashboard/products");
   };
 
-  // Função para abrir o modal
   const openProductModal = (product: Product) => {
+    console.log("🔍 Produto selecionado:", product);
+    console.log("🆔 ID do produto:", product.id);  // ✅ VERIFICAR SE ESTÁ DEFINIDO
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
 
-  // Função para fechar o modal
   const closeProductModal = () => {
     setIsModalOpen(false);
     setTimeout(() => setSelectedProduct(null), 200);
   };
 
-  // Função para adicionar ao carrinho
   const handleAddToCart = async (productId: string, quantity: number) => {
     try {
-      await cartService.addItem(productId, quantity);
-      toast.success(`${quantity}x produto adicionado ao carrinho!`);
+      console.log("🛒 Tentando adicionar ao carrinho:", { productId, quantity });
+      await cartService.addToCart(productId, quantity); // ✅ CORRIGIDO
+      toast.success(`✅ ${quantity}x produto adicionado ao carrinho!`);
     } catch (error: any) {
-      toast.error(error.detail || "Erro ao adicionar ao carrinho");
+      console.error("❌ Erro ao adicionar:", error);
+      toast.error(error.message || "Erro ao adicionar ao carrinho");
     }
   };
 
@@ -219,12 +337,10 @@ export default function ProductsPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
-      {/* ✅ BACKGROUND IMAGE FIXO */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/image-fundo-3.jpg')" }}
       />
-      {/* Overlay escuro */}
       <div className="fixed inset-0 -z-10 bg-black/50" />
 
       <div className="relative z-10 flex flex-col min-h-screen">
@@ -232,7 +348,6 @@ export default function ProductsPage() {
 
         <div className="flex-1 overflow-y-auto">
           <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            {/* Header */}
             <div className="text-center mb-8">
               <h1 className="text-4xl md:text-5xl font-bold text-yellow-400 mb-3">
                 Todos os Produtos
@@ -240,38 +355,47 @@ export default function ProductsPage() {
               <p className="text-lg text-white/90">
                 {filteredProducts.length}{" "}
                 {filteredProducts.length === 1 ? "produto encontrado" : "produtos encontrados"}
+                {products.length > 0 && ` de ${products.length} total`}
               </p>
             </div>
 
-            {/* Barra de Busca e Filtros */}
+            {/*BARRA DE BUSCA E FILTROS COM BOTÃO DE ATUALIZAR */}
             <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 mb-8 shadow-2xl border border-white/20">
               <div className="flex flex-col lg:flex-row gap-4">
-                {/* Campo de Busca */}
                 <div className="flex-1 relative">
-                  <MagnifyingGlassIcon className="absolute left-4 top-1/2 -translate-y-1/2 w-6 h-6 text-white/60" />
+                  
                   <input
                     type="text"
-                    placeholder="Buscar por nome, categoria, marca..."
+                    placeholder="Buscar por nome, descrição, categoria..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full pl-12 pr-4 py-4 text-lg bg-white/10 border-2 border-white/20 rounded-xl text-white placeholder-white/60 focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 transition-all"
                   />
                 </div>
 
-                {/* Filtros Desktop */}
                 <div className="hidden lg:flex gap-3">
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     className="px-6 py-4 bg-white/10 text-white text-lg border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 min-w-[250px] cursor-pointer transition-all"
                   >
-                    <option value="" className="bg-gray-800">📁 Todas as categorias</option>
+                    <option value="" className="bg-gray-800">📁 Todas as categorias ({categories.length})</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat} className="bg-gray-800">
                         {cat}
                       </option>
                     ))}
                   </select>
+
+                  <button
+                    onClick={handleRefresh}
+                    disabled={loadingProducts}
+                    className="px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Recarregar produtos"
+                  >
+                    <ArrowPathIcon className={`w-5 h-5 ${loadingProducts ? 'animate-spin' : ''}`} />
+                    Atualizar
+                  </button>
 
                   {(selectedCategory || searchTerm) && (
                     <button
@@ -284,7 +408,6 @@ export default function ProductsPage() {
                   )}
                 </div>
 
-                {/* Botão de Filtros (Mobile) */}
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className="lg:hidden flex items-center justify-center gap-2 px-6 py-4 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-all font-semibold"
@@ -294,7 +417,6 @@ export default function ProductsPage() {
                 </button>
               </div>
 
-              {/* Filtros Mobile (Dropdown) */}
               {showFilters && (
                 <div className="lg:hidden mt-4 pt-4 border-t-2 border-white/20 space-y-4">
                   <select
@@ -310,6 +432,16 @@ export default function ProductsPage() {
                     ))}
                   </select>
 
+                  {/*BOTÃO DE ATUALIZAR MOBILE */}
+                  <button
+                    onClick={handleRefresh}
+                    disabled={loadingProducts}
+                    className="w-full px-6 py-4 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all flex items-center justify-center gap-2 font-semibold disabled:opacity-50"
+                  >
+                    <ArrowPathIcon className={`w-5 h-5 ${loadingProducts ? 'animate-spin' : ''}`} />
+                    Atualizar Produtos
+                  </button>
+
                   {(selectedCategory || searchTerm) && (
                     <button
                       onClick={handleClearFilters}
@@ -323,7 +455,7 @@ export default function ProductsPage() {
               )}
             </div>
 
-            {/* Grid de Produtos */}
+            {/*GRID DE PRODUTOS */}
             {loadingProducts ? (
               <div className="flex justify-center items-center py-20">
                 <div className="text-center">
@@ -338,20 +470,27 @@ export default function ProductsPage() {
                   Nenhum produto encontrado
                 </h3>
                 <p className="text-white/70 text-lg mb-8">
-                  Tente ajustar os filtros ou limpar a busca para ver mais produtos
+                  {searchTerm || selectedCategory 
+                    ? "Tente ajustar os filtros ou limpar a busca para ver mais produtos"
+                    : "Nenhum produto cadastrado no sistema"
+                  }
                 </p>
-                <button
-                  onClick={handleClearFilters}
-                  className="px-8 py-4 bg-yellow-400 text-gray-900 rounded-xl hover:bg-yellow-500 transition-all font-bold text-lg shadow-lg hover:shadow-xl"
-                >
-                  Limpar Filtros
-                </button>
+                {(searchTerm || selectedCategory) && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="px-8 py-4 bg-yellow-400 text-gray-900 rounded-xl hover:bg-yellow-500 transition-all font-bold text-lg shadow-lg hover:shadow-xl"
+                  >
+                    Limpar Filtros
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredProducts.map((product) => {
-                  const finalPrice = product.discount
-                    ? product.price * (1 - product.discount)
+                  // ✅ CALCULAR PREÇO COM DESCONTO
+                  const discountValue = product.discount_percentage || product.discount || 0;
+                  const finalPrice = discountValue > 0
+                    ? product.price * (1 - discountValue / 100)
                     : product.price;
 
                   return (
@@ -360,7 +499,6 @@ export default function ProductsPage() {
                       className="group bg-white rounded-2xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border-2 border-transparent hover:border-yellow-400"
                       onClick={() => openProductModal(product)}
                     >
-                      {/* Imagem */}
                       <div className="aspect-square bg-gray-100 relative overflow-hidden">
                         {product.image_urls?.[0] ? (
                           <img
@@ -379,9 +517,9 @@ export default function ProductsPage() {
                           </div>
                         )}
 
-                        {product.discount && product.discount > 0 && (
+                        {discountValue > 0 && (
                           <div className="absolute top-3 right-3 bg-red-600 text-white px-3 py-2 rounded-full text-sm font-bold shadow-lg">
-                            -{(product.discount * 100).toFixed(0)}%
+                            -{discountValue.toFixed(0)}%
                           </div>
                         )}
 
@@ -394,7 +532,6 @@ export default function ProductsPage() {
                         )}
                       </div>
 
-                      {/* Info */}
                       <div className="p-5">
                         <p className="text-xs text-yellow-600 font-semibold mb-2 uppercase tracking-wide">
                           {product.category}
@@ -407,7 +544,7 @@ export default function ProductsPage() {
                         </p>
 
                         <div className="border-t border-gray-200 pt-4 mb-3">
-                          {product.discount && product.discount > 0 ? (
+                          {discountValue > 0 ? (
                             <div className="space-y-1">
                               <p className="text-sm text-gray-400 line-through">
                                 De: R$ {product.price.toFixed(2)}
@@ -455,7 +592,7 @@ export default function ProductsPage() {
       {/* Modal do Produto */}
       {selectedProduct && (
         <ProductModal
-          product={selectedProduct}
+          product={selectedProduct}  // ✅ PASSA O PRODUTO COMPLETO
           isOpen={isModalOpen}
           onClose={closeProductModal}
           getImageUrl={getImageUrl}

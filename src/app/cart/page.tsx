@@ -24,7 +24,7 @@ export default function CartPage() {
         // Verificar autenticação
         if (!authService.isAuthenticated()) {
           toast.error("Faça login para acessar o carrinho");
-          router.push("/");
+          router.push("/auth");
           return;
         }
 
@@ -45,7 +45,7 @@ export default function CartPage() {
         console.error("Erro ao verificar autenticação:", error);
         toast.error("Sessão expirada. Faça login novamente.");
         authService.logout();
-        router.push("/");
+        router.push("/auth");
       }
     };
 
@@ -70,7 +70,7 @@ export default function CartPage() {
         // Não autenticado
         toast.error("Sessão expirada. Faça login novamente.");
         authService.logout();
-        router.push("/");
+        router.push("/auth");
       } else {
         toast.error("Erro ao carregar carrinho");
         console.error("Erro ao carregar carrinho:", error);
@@ -92,7 +92,7 @@ export default function CartPage() {
       setCart(updatedCart);
       toast.success("Quantidade atualizada");
     } catch (error: any) {
-      toast.error(error.detail || "Erro ao atualizar quantidade");
+      toast.error(error.response?.data?.detail || "Erro ao atualizar quantidade");
     } finally {
       setUpdatingItems((prev) => {
         const newSet = new Set(prev);
@@ -111,7 +111,7 @@ export default function CartPage() {
       setCart(updatedCart);
       toast.success("Item removido");
     } catch (error: any) {
-      toast.error("Erro ao remover item");
+      toast.error(error.response?.data?.detail || "Erro ao remover item");
     } finally {
       setUpdatingItems((prev) => {
         const newSet = new Set(prev);
@@ -136,10 +136,23 @@ export default function CartPage() {
       });
       toast.success("Carrinho limpo");
     } catch (error: any) {
-      toast.error("Erro ao limpar carrinho");
+      toast.error(error.response?.data?.detail || "Erro ao limpar carrinho");
     } finally {
       setLoading(false);
     }
+  };
+
+  // ✅ HELPER: Obter URL da imagem
+  const getImageUrl = (imageUrl: string | null) => {
+    if (!imageUrl) return null;
+    
+    // Se for URL do Cloudinary, retornar direto
+    if (imageUrl.startsWith("http")) {
+      return imageUrl;
+    }
+    
+    // Se for path relativo, adicionar base URL
+    return `${process.env.NEXT_PUBLIC_API_URL}${imageUrl}`;
   };
 
   // Renderização enquanto carrega
@@ -190,7 +203,7 @@ export default function CartPage() {
                   Adicione produtos para continuar comprando
                 </p>
                 <Link
-                  href="/dashboard/products"
+                  href="/dashboard"
                   className="inline-block px-8 py-4 bg-yellow-400 text-gray-900 rounded-xl hover:bg-yellow-500 font-bold text-lg shadow-lg hover:shadow-xl transition-all"
                 >
                   Ver Produtos
@@ -231,13 +244,17 @@ export default function CartPage() {
                             <div className="flex gap-4">
                               {/* Imagem do Produto */}
                               <div className="relative w-24 h-24 bg-gray-700/50 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center border-2 border-white/10">
-                                {item.product_image ? (
+                                {item.product_image && getImageUrl(item.product_image) ? (
                                   <Image
-                                    src={`${process.env.NEXT_PUBLIC_API_URL}/admin/images/${item.product_image}`}
+                                    src={getImageUrl(item.product_image)!}
                                     alt={item.product_name}
                                     fill
                                     sizes="96px"
                                     className="object-cover"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = "none";
+                                    }}
                                   />
                                 ) : (
                                   <CubeIcon className="w-12 h-12 text-white/60" />
@@ -344,7 +361,7 @@ export default function CartPage() {
                       </Link>
 
                       <Link
-                        href="/dashboard/products"
+                        href="/dashboard"
                         className="block w-full py-4 bg-white/10 text-white text-center rounded-xl hover:bg-white/20 font-semibold transition-all border border-white/20"
                       >
                         Continuar Comprando

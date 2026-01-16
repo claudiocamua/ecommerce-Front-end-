@@ -28,6 +28,12 @@ class AuthService {
     
     const { access_token, user } = response.data;
     
+    // ✅ SALVAR NO LOCALSTORAGE
+    if (typeof window !== "undefined") {
+      localStorage.setItem("token", access_token);
+      localStorage.setItem("user", JSON.stringify(user));
+    }
+    
     if (user) {
       useAuthStore.getState().setAuth(user, access_token);
     } else {
@@ -57,20 +63,43 @@ class AuthService {
 
   saveToken(token: string) {
     if (typeof window !== "undefined") {
-      localStorage.setItem("access_token", token);
+      localStorage.setItem("token", token);
     }
+    useAuthStore.getState().setAuth(useAuthStore.getState().user, token);
   }
 
   saveUser(user: User) {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("user", JSON.stringify(user));
+    }
     useAuthStore.getState().setUser(user);
   }
 
   getToken(): string | null {
-    return useAuthStore.getState().token;
+    const zustandToken = useAuthStore.getState().token;
+    if (zustandToken) return zustandToken;
+
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("token");
+    }
+    return null;
   }
 
   getUser(): User | null {
-    return useAuthStore.getState().user;
+    const zustandUser = useAuthStore.getState().user;
+    if (zustandUser) return zustandUser;
+
+    if (typeof window !== "undefined") {
+      const userStr = localStorage.getItem("user");
+      if (userStr) {
+        try {
+          return JSON.parse(userStr);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
   }
 
   isAuthenticated(): boolean {
@@ -78,6 +107,10 @@ class AuthService {
   }
 
   logout() {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    }
     useAuthStore.getState().logout();
   }
 
@@ -85,6 +118,11 @@ class AuthService {
     try {
       const response = await api.post("/auth/google", { token: googleToken });
       const { user, access_token } = response.data;
+      
+      if (typeof window !== "undefined") {
+        localStorage.setItem("token", access_token);
+        localStorage.setItem("user", JSON.stringify(user));
+      }
       
       useAuthStore.getState().setAuth(user, access_token);
       

@@ -2,16 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { productsService } from "@/app/services/products";
 import Navbar from "@/app/components/layout/navbar";
 import Footer from "@/app/components/layout/Footer";
 import { toast } from "react-hot-toast";
 import { useAuthStore } from "@/store/useAuthStore";
-import {
-  MagnifyingGlassIcon,
-  FunnelIcon,
-  XMarkIcon,
-} from "@heroicons/react/24/outline";
+import { XMarkIcon } from "@heroicons/react/24/outline";
 
 interface Product {
   id: string;
@@ -19,6 +14,7 @@ interface Product {
   description: string;
   price: number;
   discount?: number;
+  discount_percentage?: number;
   stock: number;
   category: string;
   brand: string;
@@ -37,53 +33,81 @@ export default function ProductsPage() {
   const [activeSearch, setActiveSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [categories, setCategories] = useState<string[]>([]);
-  const [showFilters, setShowFilters] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // ✅ Função auxiliar para montar URL da imagem
   const getImageUrl = (imageUrl: string): string => {
-    const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    
-    // Se já for uma URL completa, retorna ela mesma
+    // Se já for uma URL completa (Cloudinary), retorna ela mesma
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       return imageUrl;
     }
     
-    // Se começar com /, concatena com baseURL
+    // URLs antigas do Render (fallback)
+    const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     if (imageUrl.startsWith('/')) {
       return `${baseURL}${imageUrl}`;
     }
     
-    // Caso contrário, adiciona / antes
     return `${baseURL}/${imageUrl}`;
   };
 
-  // Carregar produtos
+  // ✅ CARREGAR TODOS OS PRODUTOS (SEM AUTENTICAÇÃO)
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const data = await productsService.getProducts({
-          skip: 0,
-          limit: 100,
-        });
+        setLoading(true);
+        const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-        let productsList: Product[] = [];
-        
-        if (Array.isArray(data)) {
-          productsList = data;
-        } else if (data?.products && Array.isArray(data.products)) {
-          productsList = data.products;
-        }
-        
-        setProducts(productsList);
-        setFilteredProducts(productsList);
+        let allProductsList: Product[] = [];
+        let currentPage = 1;
+        let totalPages = 1;
 
+        // ✅ CARREGAR TODAS AS PÁGINAS
+        do {
+          const res = await fetch(`${baseURL}/products/?page=${currentPage}`, {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!res.ok) {
+            throw new Error("Erro ao carregar produtos");
+          }
+
+          const data = await res.json();
+
+          if (data.products && Array.isArray(data.products)) {
+            // ✅ MAPEAR _id PARA id
+            const mappedProducts = data.products.map((p: any) => ({
+              ...p,
+              id: p._id || p.id,
+            }));
+            allProductsList = [...allProductsList, ...mappedProducts];
+            totalPages = data.pages || 1;
+          } else if (Array.isArray(data)) {
+            // ✅ MAPEAR _id PARA id
+            const mappedProducts = data.map((p: any) => ({
+              ...p,
+              id: p._id || p.id,
+            }));
+            allProductsList = [...allProductsList, ...mappedProducts];
+            break;
+          }
+
+          currentPage++;
+        } while (currentPage <= totalPages);
+
+        console.log(`✅ Produtos carregados: ${allProductsList.length}`);
+        setProducts(allProductsList);
+        setFilteredProducts(allProductsList);
+
+        // ✅ EXTRAIR CATEGORIAS ÚNICAS
         const uniqueCategories = [
-          ...new Set(productsList.map((p) => p.category).filter(Boolean)),
+          ...new Set(allProductsList.map((p) => p.category).filter(Boolean)),
         ];
-        
         setCategories(uniqueCategories);
 
+        // ✅ APLICAR FILTROS DA URL
         const searchQuery = searchParams.get("search");
         const categoryQuery = searchParams.get("category");
         
@@ -105,7 +129,7 @@ export default function ProductsPage() {
     loadProducts();
   }, [searchParams]);
 
-  // Filtrar produtos
+  // ✅ FILTRAR PRODUTOS
   useEffect(() => {
     let result = [...products];
 
@@ -120,7 +144,7 @@ export default function ProductsPage() {
           p.name.toLowerCase().includes(search) ||
           p.description.toLowerCase().includes(search) ||
           p.category.toLowerCase().includes(search) ||
-          p.brand.toLowerCase().includes(search)
+          (p.brand && p.brand.toLowerCase().includes(search))
       );
     }
 
@@ -189,7 +213,7 @@ export default function ProductsPage() {
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="w-full px-8 py-4 bg-transparent text-lg border-2 border-gray-300 rounded-2xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 min-w-[280px] cursor-pointer shadow-lg transition-all hover:border-yellow-400 "
+                  className="w-full px-8 py-4 bg-transparent text-lg border-2 border-gray-300 rounded-2xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 min-w-[280px] cursor-pointer shadow-lg transition-all hover:border-yellow-400 text-white"
                   style={{ 
                     backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%236B7280'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`,
                     backgroundRepeat: 'no-repeat',
@@ -197,9 +221,9 @@ export default function ProductsPage() {
                     backgroundSize: '1.5rem'
                   }}
                 >
-                  <option value="">📁 Todas as categorias</option>
+                  <option value="" className="bg-black">📁 Todas as categorias</option>
                   {categories.map((cat) => (
-                    <option className="bg-black/50" key={cat} value={cat}>
+                    <option className="bg-black" key={cat} value={cat}>
                       {cat}
                     </option>
                   ))}
@@ -248,8 +272,10 @@ export default function ProductsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredProducts.map((product) => {
-                const finalPrice = product.discount
-                  ? product.price * (1 - product.discount)
+                // ✅ USAR discount_percentage
+                const discountValue = product.discount_percentage || product.discount || 0;
+                const finalPrice = discountValue > 0
+                  ? product.price * (1 - discountValue / 100)
                   : product.price;
 
                 return (
@@ -266,13 +292,8 @@ export default function ProductsPage() {
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                           onError={(e) => {
                             const target = e.currentTarget as HTMLImageElement;
-                            console.error("❌ Erro ao carregar imagem:", product.image_urls[0]);
-                            console.error("❌ URL tentada:", getImageUrl(product.image_urls[0]));
                             target.onerror = null;
                             target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(product.name)}&size=400&background=1f2937&color=facc15&bold=true`;
-                          }}
-                          onLoad={() => {
-                            console.log("✅ Imagem carregada:", getImageUrl(product.image_urls[0]));
                           }}
                         />
                       ) : (
@@ -281,9 +302,9 @@ export default function ProductsPage() {
                         </div>
                       )}
 
-                      {product.discount && product.discount > 0 && (
+                      {discountValue > 0 && (
                         <div className="absolute top-3 right-3 bg-red-600 text-white px-3 py-2 rounded-full text-sm font-bold">
-                          -{(product.discount * 100).toFixed(0)}%
+                          -{discountValue.toFixed(0)}%
                         </div>
                       )}
 
@@ -308,7 +329,7 @@ export default function ProductsPage() {
                       </p>
 
                       <div className="border-t border-gray-200 pt-4 mb-3">
-                        {product.discount && product.discount > 0 ? (
+                        {discountValue > 0 ? (
                           <div className="space-y-1">
                             <p className="text-sm text-gray-400 line-through">
                               De: R$ {product.price.toFixed(2)}
