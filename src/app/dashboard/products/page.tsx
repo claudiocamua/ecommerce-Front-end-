@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { authService } from "@/app/services/auth";
-import { productsService } from "@/app/services/products";
 import Footer from "@/app/components/layout/Footer";
 import { toast } from "react-hot-toast";
 import NavbarDashboard from "@/app/components/dashboard/NavbarDashboard";
@@ -13,7 +12,7 @@ import {
   MagnifyingGlassIcon,
   FunnelIcon,
   XMarkIcon,
-  ArrowPathIcon, // ✅ ADICIONADO
+  ArrowPathIcon, 
 } from "@heroicons/react/24/outline";
 
 interface User {
@@ -31,14 +30,14 @@ interface Product {
   description: string;
   price: number;
   discount?: number;
-  discount_percentage?: number; // ✨ ADICIONADO
+  discount_percentage?: number; 
   stock: number;
   category: string;
-  brand?: string; // ✨ OPCIONAL
+  brand?: string; 
   image_urls: string[];
   created_at: string;
 }
-
+// Página de Produtos no Dashboard
 export default function ProductsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -88,7 +87,7 @@ export default function ProductsPage() {
           setUser(userDataFromAPI);
         }
       } catch (err) {
-        console.error("❌ Erro ao carregar usuário:", err);
+        console.error(" Erro ao carregar usuário:", err);
         toast.error("Erro ao carregar dados. Faça login novamente.");
         authService.logout();
         router.push("/");
@@ -100,12 +99,12 @@ export default function ProductsPage() {
     loadUserData();
   }, [router]);
 
-  // ✅ CARREGAR PRODUTOS - CORRIGIDO COM PAGINAÇÃO
+  // CARREGAR PRODUTOS COM PAGINAÇÃO
   useEffect(() => {
     const loadProducts = async () => {
       try {
         setLoadingProducts(true);
-        console.log("📡 Buscando produtos...");
+        console.log(" Buscando produtos...");
 
         const token = authService.getToken();
         const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
@@ -115,7 +114,7 @@ export default function ProductsPage() {
         let totalPages = 1;
 
         do {
-          console.log(`📄 Buscando página ${currentPage}...`);
+          console.log(` Buscando página ${currentPage}...`);
           
           const res = await fetch(`${baseURL}/products/?page=${currentPage}`, {
             headers: {
@@ -125,36 +124,36 @@ export default function ProductsPage() {
 
           if (!res.ok) {
             const errorData = await res.json();
-            console.error("❌ Erro da API:", errorData);
+            console.error(" Erro da API:", errorData);
             throw new Error("Erro ao carregar produtos");
           }
 
+          // MAPEAR _id PARA id
           const data = await res.json();
           
-          // ✅ MAPEAR _id PARA id
           if (data.products && Array.isArray(data.products)) {
             const mappedProducts = data.products.map((p: any) => ({
               ...p,
-              id: p._id || p.id, // ✅ USAR _id SE EXISTIR, SENÃO id
+              id: p._id || p.id, 
             }));
             allProducts = [...allProducts, ...mappedProducts];
             totalPages = data.pages || 1;
-            console.log(`✅ Página ${currentPage}/${totalPages}: ${mappedProducts.length} produtos`);
+            console.log(` Página ${currentPage}/${totalPages}: ${mappedProducts.length} produtos`);
           } else if (Array.isArray(data)) {
             const mappedProducts = data.map((p: any) => ({
               ...p,
-              id: p._id || p.id, // ✅ USAR _id SE EXISTIR, SENÃO id
+              id: p._id || p.id, 
             }));
             allProducts = [...allProducts, ...mappedProducts];
-            console.log(`✅ Página ${currentPage}: ${mappedProducts.length} produtos (sem paginação)`);
+            console.log(` Página ${currentPage}: ${mappedProducts.length} produtos (sem paginação)`);
             break;
           }
 
           currentPage++;
         } while (currentPage <= totalPages);
 
-        console.log(`✅ TOTAL: ${allProducts.length} produtos carregados de ${totalPages} páginas`);
-        console.log("📦 Primeiros 3 produtos:", allProducts.slice(0, 3));
+        console.log(` TOTAL: ${allProducts.length} produtos carregados de ${totalPages} páginas`);
+        console.log(" Primeiros 3 produtos:", allProducts.slice(0, 3));
         
         setProducts(allProducts);
         setFilteredProducts(allProducts);
@@ -162,8 +161,8 @@ export default function ProductsPage() {
         const allCategories = allProducts.map((p) => p.category).filter(Boolean);
         const uniqueCategories = [...new Set(allCategories)].sort();
         
-        console.log("📁 Categorias únicas encontradas:", uniqueCategories);
-        console.log("📁 Total de categorias:", uniqueCategories.length);
+        console.log(" Categorias únicas encontradas:", uniqueCategories);
+        console.log(" Total de categorias:", uniqueCategories.length);
         setCategories(uniqueCategories);
 
         const categoryFromUrl = searchParams.get("categoria");
@@ -174,7 +173,7 @@ export default function ProductsPage() {
 
         toast.success(`${allProducts.length} produtos carregados`);
       } catch (error) {
-        console.error("❌ Erro ao carregar produtos:", error);
+        console.error(" Erro ao carregar produtos:", error);
         toast.error("Erro ao carregar produtos");
         setProducts([]);
         setFilteredProducts([]);
@@ -188,9 +187,9 @@ export default function ProductsPage() {
     }
   }, [user, searchParams]);
 
-  // ✅ NOVA FUNÇÃO PARA RECARREGAR PRODUTOS
+  // FUNÇÃO DE ATUALIZAÇÃO DE PRODUTOS
   const handleRefresh = async () => {
-    if (loadingProducts) return; // Evita múltiplos cliques
+    if (loadingProducts) return; 
 
     try {
       setLoadingProducts(true);
@@ -212,7 +211,6 @@ export default function ProductsPage() {
 
         const data = await res.json();
         
-        // ✅ MAPEAR _id PARA id
         if (data.products && Array.isArray(data.products)) {
           const mappedProducts = data.products.map((p: any) => ({
             ...p,
@@ -234,47 +232,46 @@ export default function ProductsPage() {
 
       setProducts(allProducts);
       setFilteredProducts(allProducts);
-
+    
+      // Atualizar categorias
       const allCategories = allProducts.map((p) => p.category).filter(Boolean);
       const uniqueCategories = [...new Set(allCategories)].sort();
       setCategories(uniqueCategories);
 
-      toast.success(`✅ Atualizado! ${allProducts.length} produtos`);
+      toast.success(` Atualizado! ${allProducts.length} produtos`);
     } catch (error) {
-      console.error("❌ Erro ao atualizar:", error);
+      console.error(" Erro ao atualizar:", error);
       toast.error("Erro ao atualizar produtos");
     } finally {
       setLoadingProducts(false);
     }
   };
 
-  // ✅ FILTRAR PRODUTOS - MELHORADO
+  // APLICAR FILTROS
   useEffect(() => {
-    console.log("🔍 Aplicando filtros...");
-    console.log("📝 Busca:", searchTerm);
-    console.log("📁 Categoria:", selectedCategory);
+    console.log(" Aplicando filtros...");
+    console.log(" Busca:", searchTerm);
+    console.log(" Categoria:", selectedCategory);
 
     if (!Array.isArray(products) || products.length === 0) {
-      console.log("⚠️ Nenhum produto disponível para filtrar");
+      console.log(" Nenhum produto disponível para filtrar");
       setFilteredProducts([]);
       return;
     }
 
     let result = [...products];
 
-    // ✅ FILTRO POR CATEGORIA
     if (selectedCategory) {
       result = result.filter((p) => {
         const match = p.category === selectedCategory;
         if (!match) {
-          console.log(`❌ Produto "${p.name}" não corresponde à categoria "${selectedCategory}"`);
+          console.log(` Produto "${p.name}" não corresponde à categoria "${selectedCategory}"`);
         }
         return match;
       });
-      console.log(`📁 ${result.length} produtos após filtro de categoria`);
+      console.log(` ${result.length} produtos após filtro de categoria`);
     }
 
-    // ✅ FILTRO POR BUSCA (melhorado)
     if (searchTerm && searchTerm.trim()) {
       const search = searchTerm.toLowerCase().trim();
       result = result.filter((p) => {
@@ -285,23 +282,24 @@ export default function ProductsPage() {
         
         return nameMatch || descMatch || catMatch || brandMatch;
       });
-      console.log(`🔍 ${result.length} produtos após filtro de busca`);
+      console.log(` ${result.length} produtos após filtro de busca`);
     }
 
-    console.log(`✅ Total de produtos filtrados: ${result.length}`);
+    console.log(` Total de produtos filtrados: ${result.length}`);
     setFilteredProducts(result);
   }, [products, selectedCategory, searchTerm]);
 
+  // LIMPAR FILTROS
   const handleClearFilters = () => {
-    console.log("🧹 Limpando filtros...");
+    console.log(" Limpando filtros...");
     setSelectedCategory("");
     setSearchTerm("");
     router.push("/dashboard/products");
   };
 
   const openProductModal = (product: Product) => {
-    console.log("🔍 Produto selecionado:", product);
-    console.log("🆔 ID do produto:", product.id);  // ✅ VERIFICAR SE ESTÁ DEFINIDO
+    console.log(" Produto selecionado:", product);
+    console.log(" ID do produto:", product.id); 
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
@@ -311,13 +309,14 @@ export default function ProductsPage() {
     setTimeout(() => setSelectedProduct(null), 200);
   };
 
+  // ADICIONAR AO CARRINHO
   const handleAddToCart = async (productId: string, quantity: number) => {
     try {
-      console.log("🛒 Tentando adicionar ao carrinho:", { productId, quantity });
-      await cartService.addToCart(productId, quantity); // ✅ CORRIGIDO
-      toast.success(`✅ ${quantity}x produto adicionado ao carrinho!`);
+      console.log(" Tentando adicionar ao carrinho:", { productId, quantity });
+      await cartService.addToCart(productId, quantity); 
+      toast.success(` ${quantity}x produto adicionado ao carrinho!`);
     } catch (error: any) {
-      console.error("❌ Erro ao adicionar:", error);
+      console.error(" Erro ao adicionar:", error);
       toast.error(error.message || "Erro ao adicionar ao carrinho");
     }
   };
@@ -358,8 +357,7 @@ export default function ProductsPage() {
                 {products.length > 0 && ` de ${products.length} total`}
               </p>
             </div>
-
-            {/*BARRA DE BUSCA E FILTROS COM BOTÃO DE ATUALIZAR */}
+            {/*FILTROS DE BUSCA E CATEGORIA */}
             <div className="bg-white/10 backdrop-blur-md rounded-3xl p-6 mb-8 shadow-2xl border border-white/20">
               <div className="flex flex-col lg:flex-row gap-4">
                 <div className="flex-1 relative">
@@ -379,7 +377,7 @@ export default function ProductsPage() {
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     className="px-6 py-4 bg-white/10 text-white text-lg border-2 border-white/20 rounded-xl focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400 min-w-[250px] cursor-pointer transition-all"
                   >
-                    <option value="" className="bg-gray-800">📁 Todas as categorias ({categories.length})</option>
+                    <option value="" className="bg-gray-800"> Todas as categorias ({categories.length})</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat} className="bg-gray-800">
                         {cat}
@@ -424,7 +422,7 @@ export default function ProductsPage() {
                     onChange={(e) => setSelectedCategory(e.target.value)}
                     className="w-full px-4 py-4 text-lg bg-white/10 border-2 border-white/20 text-white rounded-xl"
                   >
-                    <option value="" className="bg-gray-800">📁 Todas as categorias</option>
+                    <option value="" className="bg-gray-800">Todas as categorias</option>
                     {categories.map((cat) => (
                       <option key={cat} value={cat} className="bg-gray-800">
                         {cat}
@@ -432,7 +430,6 @@ export default function ProductsPage() {
                     ))}
                   </select>
 
-                  {/*BOTÃO DE ATUALIZAR MOBILE */}
                   <button
                     onClick={handleRefresh}
                     disabled={loadingProducts}
@@ -455,7 +452,6 @@ export default function ProductsPage() {
               )}
             </div>
 
-            {/*GRID DE PRODUTOS */}
             {loadingProducts ? (
               <div className="flex justify-center items-center py-20">
                 <div className="text-center">
@@ -465,7 +461,6 @@ export default function ProductsPage() {
               </div>
             ) : filteredProducts.length === 0 ? (
               <div className="bg-white/10 backdrop-blur-md rounded-3xl p-16 text-center shadow-2xl border border-white/20">
-                <div className="text-8xl mb-6">😔</div>
                 <h3 className="text-3xl font-bold text-white mb-4">
                   Nenhum produto encontrado
                 </h3>
@@ -487,7 +482,7 @@ export default function ProductsPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {filteredProducts.map((product) => {
-                  // ✅ CALCULAR PREÇO COM DESCONTO
+                  // Cálculo do preço com desconto
                   const discountValue = product.discount_percentage || product.discount || 0;
                   const finalPrice = discountValue > 0
                     ? product.price * (1 - discountValue / 100)
@@ -513,7 +508,7 @@ export default function ProductsPage() {
                           />
                         ) : (
                           <div className="flex items-center justify-center h-full text-gray-400">
-                            📷 Sem imagem
+                             Sem imagem
                           </div>
                         )}
 
@@ -592,7 +587,7 @@ export default function ProductsPage() {
       {/* Modal do Produto */}
       {selectedProduct && (
         <ProductModal
-          product={selectedProduct}  // ✅ PASSA O PRODUTO COMPLETO
+          product={selectedProduct}  
           isOpen={isModalOpen}
           onClose={closeProductModal}
           getImageUrl={getImageUrl}

@@ -37,14 +37,14 @@ export default function LoginForm() {
     setLoading(true);
 
     try {
-      console.log("🔐 Tentando fazer login...");
+      console.log(" Tentando fazer login...");
 
       const loginResponse = await authService.login({
         email: formData.email,
         password: formData.password,
       });
 
-      console.log("✅ Login bem-sucedido!");
+      console.log(" Login bem-sucedido!");
 
       authService.saveToken(loginResponse.access_token);
 
@@ -65,7 +65,7 @@ export default function LoginForm() {
         window.location.href = "/dashboard";
       }, 1000);
     } catch (error: any) {
-      console.error("❌ Erro no login:", error);
+      console.error(" Erro no login:", error);
 
       let errorMessage = "Erro ao fazer login";
 

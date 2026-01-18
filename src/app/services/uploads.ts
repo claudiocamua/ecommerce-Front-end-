@@ -1,7 +1,7 @@
 import api from "./api";
-
+// Serviço de Uploads
 export const uploadsService = {
-  // POST /uploads/products/{product_id}
+
   async uploadProductImage(product_id: string, file: File) {
     try {
       const formData = new FormData();
@@ -19,7 +19,6 @@ export const uploadsService = {
     }
   },
 
-  // POST /uploads/multiple/{product_id}
   async uploadMultipleImages(product_id: string, files: File[]) {
     try {
       const formData = new FormData();
@@ -39,7 +38,6 @@ export const uploadsService = {
     }
   },
 
-  // DELETE /uploads/{filename}
   async deleteImage(filename: string) {
     try {
       const response = await api.delete(`/uploads/${filename}`);

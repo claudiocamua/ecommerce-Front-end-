@@ -118,7 +118,7 @@ export default function AdminUsuariosPage() {
         return;
       }
 
-      console.log('🔍 Carregando usuários...');
+      console.log(' Carregando usuários...');
       
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/users/`, {
         headers: {
@@ -127,11 +127,11 @@ export default function AdminUsuariosPage() {
         },
       });
 
-      console.log('📡 Status da resposta:', response.status);
+      console.log(' Status da resposta:', response.status);
 
       if (response.status === 404) {
-        console.warn('⚠️ Endpoint /admin/users não encontrado');
-        console.log('💡 Configure o backend para habilitar esta funcionalidade');
+        console.warn(' Endpoint /admin/users não encontrado');
+        console.log(' Configure o backend para habilitar esta funcionalidade');
         setUsers([]);
         setLoading(false);
         return;
@@ -139,12 +139,12 @@ export default function AdminUsuariosPage() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Erro na resposta:', errorData);
+        console.error(' Erro na resposta:', errorData);
         throw new Error(errorData.detail || `Erro ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ Usuários carregados:', data);
+      console.log(' Usuários carregados:', data);
       
       // Garantir que sempre seja um array
       if (Array.isArray(data)) {
@@ -154,7 +154,7 @@ export default function AdminUsuariosPage() {
       } else if (data && Array.isArray(data.data)) {
         setUsers(data.data);
       } else {
-        console.warn('⚠️ Formato de resposta inesperado, usando array vazio');
+        console.warn(' Formato de resposta inesperado, usando array vazio');
         setUsers([]);
       }
     } catch (error: any) {

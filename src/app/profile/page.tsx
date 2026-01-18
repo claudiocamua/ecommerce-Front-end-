@@ -39,13 +39,13 @@ export default function ProfilePage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!user) {
-        console.log("❌ Usuário não encontrado no store");
+        console.log(" Usuário não encontrado no store");
         toast.error("Você precisa estar logado para acessar o perfil!");
         router.push("/");
         return;
       }
 
-      console.log("✅ Usuário encontrado:", user);
+      console.log(" Usuário encontrado:", user);
 
       setProfile({
         id: user.id,
@@ -85,8 +85,9 @@ export default function ProfilePage() {
         return;
       }
 
-      console.log("📤 Atualizando perfil:", { full_name: formData.full_name });
+      console.log(" Atualizando perfil:", { full_name: formData.full_name });
 
+      // Chamada ao backend para atualizar o perfil
       const res = await fetch(`${baseURL}/users/me`, {
         method: "PUT",
         headers: {
@@ -100,12 +101,12 @@ export default function ProfilePage() {
 
       if (!res.ok) {
         const errorData = await res.json();
-        console.error("❌ Erro do backend:", errorData);
+        console.error(" Erro do backend:", errorData);
         throw new Error(errorData.detail || "Erro ao atualizar perfil");
       }
 
       const data = await res.json();
-      console.log("✅ Resposta completa do backend:", data);
+      console.log(" Resposta completa do backend:", data);
 
       const updatedUser = data.user;
 
@@ -119,7 +120,7 @@ export default function ProfilePage() {
       toast.success("Perfil atualizado com sucesso!");
       setIsEditing(false);
     } catch (error: any) {
-      console.error("❌ Erro completo:", error);
+      console.error(" Erro completo:", error);
       toast.error(error.message || "Erro ao atualizar perfil");
     } finally {
       setSaving(false);
@@ -156,12 +157,10 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen flex flex-col relative">
-      {/* ✅ BACKGROUND IMAGE */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/image-fundo-1.jpg')" }}
       />
-      {/* Overlay escuro */}
       <div className="fixed inset-0 -z-10 bg-black/60" />
 
       <NavbarDashboard user={user} />
@@ -192,7 +191,6 @@ export default function ProfilePage() {
           </div>
 
           <div className="space-y-6">
-            {/* Nome Completo */}
             <div className="flex items-start gap-4">
               <UserIcon className="w-6 h-6 text-yellow-400 mt-1" />
               <div className="flex-1">
@@ -272,7 +270,7 @@ export default function ProfilePage() {
                 disabled={saving}
                 className="flex-1 px-6 py-4 bg-green-500 text-white rounded-xl hover:bg-green-600 transition-all font-bold text-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {saving ? "⏳ Salvando..." : "💾 Salvar Alterações"}
+                {saving ? " Salvando..." : " Salvar Alterações"}
               </button>
               <button
                 onClick={() => {
@@ -285,7 +283,7 @@ export default function ProfilePage() {
                 disabled={saving}
                 className="px-6 py-4 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all font-bold text-lg disabled:opacity-50"
               >
-                ❌ Cancelar
+                Cancelar
               </button>
             </div>
           )}

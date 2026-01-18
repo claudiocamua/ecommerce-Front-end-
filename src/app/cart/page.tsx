@@ -101,15 +101,16 @@ export default function CartPage() {
       });
     }
   };
+  
 
+  // Remover item do carrinho
   const removeItem = async (productId: string) => {
     try {
       const updatedCart = await cartService.removeItem(productId);
       
-      // ✅ GARANTIR QUE items SEMPRE SEJA UM ARRAY
       setCart({
         ...updatedCart,
-        items: updatedCart.items || []  // ← ADICIONE ISSO
+        items: updatedCart.items || []  
       });
       
       toast.success("Item removido do carrinho");
@@ -118,7 +119,7 @@ export default function CartPage() {
       toast.error(error.message || "Erro ao remover item");
     }
   };
-
+  // Limpar todo o carrinho
   const clearCart = async () => {
     if (!confirm("Deseja limpar todo o carrinho?")) return;
 
@@ -140,7 +141,7 @@ export default function CartPage() {
     }
   };
 
-  // ✅ HELPER: Obter URL da imagem
+  // Obter URL da imagem
   const getImageUrl = (imageUrl: string | null) => {
     if (!imageUrl) return null;
     
@@ -153,7 +154,7 @@ export default function CartPage() {
     return `${process.env.NEXT_PUBLIC_API_URL}${imageUrl}`;
   };
 
-  // Renderização enquanto carrega
+  // Exibir loading enquanto carrega
   if (loading || !user) {
     return (
       <div className="relative min-h-screen flex flex-col">
@@ -179,7 +180,6 @@ export default function CartPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
-      {/* Background */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/image-fundo-4.jpg')" }}
@@ -270,7 +270,7 @@ export default function CartPage() {
 
                                 {!item.in_stock && (
                                   <p className="text-red-400 text-sm mb-3 font-semibold">
-                                    ⚠️ Estoque insuficiente ({item.available_stock} disponíveis)
+                                     Estoque insuficiente ({item.available_stock} disponíveis)
                                   </p>
                                 )}
 
@@ -355,7 +355,7 @@ export default function CartPage() {
                         href="/checkout"
                         className="block w-full py-4 bg-yellow-400 text-gray-900 text-center rounded-xl hover:bg-yellow-500 font-bold text-lg mb-4 shadow-lg hover:shadow-xl transition-all"
                       >
-                        Finalizar Compra
+                        Finalizar Compra 
                       </Link>
 
                       <Link

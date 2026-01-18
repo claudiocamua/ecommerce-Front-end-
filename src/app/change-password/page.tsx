@@ -49,14 +49,8 @@ export default function ChangePasswordPage() {
 
     setLoading(true);
 
+    // Simular chamada à API
     try {
-      // TODO: Implementar chamada à API para alterar senha
-      // const response = await api.post("/auth/change-password", {
-      //   current_password: formData.currentPassword,
-      //   new_password: formData.newPassword,
-      // });
-
-      // Simulação de sucesso
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
       toast.success("Senha alterada com sucesso!");
@@ -66,7 +60,7 @@ export default function ChangePasswordPage() {
         confirmPassword: "",
       });
       
-      // Redirecionar para o perfil após 1 segundo
+      
       setTimeout(() => {
         router.push("/profile");
       }, 1000);

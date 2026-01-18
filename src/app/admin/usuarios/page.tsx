@@ -13,10 +13,10 @@ import {
 
 interface User {
   _id: string;
-  id?: string; // ✅ Adicionar id como opcional
+  id?: string; 
   email: string;
   full_name: string;
-  name?: string; // ✅ Adicionar name como opcional (API pode retornar 'name')
+  name?: string; 
   is_active: boolean;
   is_verified: boolean;
   is_admin: boolean;
@@ -78,12 +78,12 @@ export default function UsuariosPage() {
         usersList = [];
       }
 
-      // ✅ NORMALIZAR: Garantir que _id e full_name existam
+      //  Garantir que _id e full_name existam
       const normalizedUsers: User[] = usersList.map(user => ({
         _id: user._id || user.id, // Usar 'id' se '_id' não existir
         id: user.id,
         email: user.email || "",
-        full_name: user.full_name || user.name || "Sem nome", // ✅ API retorna 'name'
+        full_name: user.full_name || user.name || "Sem nome", // API retorna 'name' em vez de 'full_name'
         name: user.name,
         is_active: user.is_active ?? true,
         is_verified: user.is_verified ?? false,
@@ -93,13 +93,13 @@ export default function UsuariosPage() {
         oauth_provider: user.oauth_provider,
       }));
 
-      console.log("📊 Primeiro usuário normalizado:", normalizedUsers[0]);
-      console.log(`✅ ${normalizedUsers.length} usuários processados`);
+      console.log(" Primeiro usuário normalizado:", normalizedUsers[0]);
+      console.log(` ${normalizedUsers.length} usuários processados`);
       
       setUsers(normalizedUsers);
       
     } catch (error: any) {
-      console.error("❌ ERRO COMPLETO:", error);
+      console.error(" ERRO COMPLETO:", error);
       toast.error(error.message || "Erro ao carregar usuários");
       setUsers([]);
     } finally {
@@ -113,19 +113,18 @@ export default function UsuariosPage() {
     try {
       const token = localStorage.getItem("access_token");
       
-      // 🔍 LOG DE DEBUG
-      console.log("🔍 DEBUG handleCreateOrUpdate:");
+      //  LOG DE DEBUG
+      console.log(" DEBUG handleCreateOrUpdate:");
       console.log("  editingUser:", editingUser);
       console.log("  editingUser?._id:", editingUser?._id);
       console.log("  editingUser?.id:", editingUser?.id);
       console.log("  formData:", formData);
       
-      // ✅ CORREÇÃO: Usar _id OU id
       const userId = editingUser?._id || editingUser?.id;
       
       if (editingUser && !userId) {
         toast.error("Erro: ID do usuário não encontrado");
-        console.error("❌ editingUser sem _id nem id:", editingUser);
+        console.error(" editingUser sem _id nem id:", editingUser);
         return;
       }
       
@@ -135,9 +134,9 @@ export default function UsuariosPage() {
 
       const method = editingUser ? "PUT" : "POST";
 
-      console.log("🌐 URL da requisição:", url);
-      console.log("📤 Método:", method);
-      console.log("📤 User ID:", userId);
+      console.log(" URL da requisição:", url);
+      console.log(" Método:", method);
+      console.log(" User ID:", userId);
 
       const response = await fetch(url, {
         method,
@@ -148,16 +147,16 @@ export default function UsuariosPage() {
         body: JSON.stringify(formData),
       });
 
-      console.log("📡 Status da resposta:", response.status);
+      console.log(" Status da resposta:", response.status);
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error("❌ Erro da API:", errorData);
+        console.error(" Erro da API:", errorData);
         throw new Error(errorData.detail || "Erro ao salvar usuário");
       }
 
       const result = await response.json();
-      console.log("✅ Resposta da API:", result);
+      console.log(" Resposta da API:", result);
 
       toast.success(
         editingUser ? "Usuário atualizado!" : "Usuário criado com sucesso!"
@@ -166,7 +165,7 @@ export default function UsuariosPage() {
       resetForm();
       fetchUsers();
     } catch (error: any) {
-      console.error("❌ Erro ao salvar usuário:", error);
+      console.error(" Erro ao salvar usuário:", error);
       toast.error(error.message || "Erro ao salvar usuário");
     }
   };
@@ -177,7 +176,6 @@ export default function UsuariosPage() {
     try {
       const token = localStorage.getItem("access_token");
 
-      // ✅ CORREÇÃO: Adicionar barra final
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/admin/users/${userId}/`,
         {
@@ -199,19 +197,19 @@ export default function UsuariosPage() {
   };
 
   const handleEdit = (user: User) => {
-    console.log("🔍 DEBUG handleEdit:");
+    console.log(" DEBUG handleEdit:");
     console.log("  user recebido:", user);
     console.log("  user._id:", user._id);
     console.log("  user.id:", user.id);
     
-    // ✅ VERIFICAÇÃO: Se user não tem _id nem id
+    //  Verificar se o usuário é válido
     if (!user || (!user._id && !user.id)) {
       toast.error("Erro: Dados do usuário inválidos");
-      console.error("❌ user sem _id ou id:", user);
+      console.error(" user sem _id ou id:", user);
       return;
     }
     
-    // ✅ Garantir que _id esteja presente
+    // Normalizar o usuário para garantir que _id exista
     const normalizedUser = {
       ...user,
       _id: user._id || user.id,
@@ -228,9 +226,10 @@ export default function UsuariosPage() {
     });
     setShowModal(true);
     
-    console.log("✅ editingUser definido:", normalizedUser);
+    console.log(" editingUser definido:", normalizedUser);
   };
 
+  // Reseta o formulário e o estado de edição
   const resetForm = () => {
     setFormData({
       full_name: "",
@@ -243,6 +242,7 @@ export default function UsuariosPage() {
     setEditingUser(null);
   };
 
+  // Filtra os usuários com base na busca e no filtro de função
   const filteredUsers = (Array.isArray(users) ? users : []).filter((user) => {
     if (!user) return false;
     
@@ -353,7 +353,7 @@ export default function UsuariosPage() {
                         <div className="flex-shrink-0 h-10 w-10">
                           <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                             <span className="text-blue-600 font-semibold">
-                              {/*PROTEÇÃO: Verificar se full_name existe */}
+                              {/* Verificar se full_name existe */}
                               {user.full_name ? user.full_name.charAt(0).toUpperCase() : "?"}
                             </span>
                           </div>

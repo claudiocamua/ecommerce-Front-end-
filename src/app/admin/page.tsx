@@ -25,6 +25,7 @@ export default function AdminPage() {
           return;
         }
 
+        // Buscar dados do usuário
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -74,7 +75,6 @@ export default function AdminPage() {
 
   return (
     <div className="relative min-h-screen">
-      {/* Background Fixo */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/image-fundo-4.jpg')" }}
@@ -88,7 +88,7 @@ export default function AdminPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-4xl md:text-5xl font-bold text-yellow-400 mb-2">
-                  🛠️ Painel do Administrador
+                   Painel do Administrador
                 </h1>
                 <p className="text-white/80 text-lg">
                   Bem-vindo,{" "}

@@ -26,7 +26,6 @@ const config: Config = {
           foreground: "hsl(var(--accent-foreground))",
         },
 
-        /* 🎖️ DOURADO DIRETO */
         gold: {
           light: "#E5C185",
           DEFAULT: "#D4AF37",

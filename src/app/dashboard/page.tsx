@@ -41,7 +41,7 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [allProducts, setAllProducts] = useState<Product[]>([]);
   const [loadingProducts, setLoadingProducts] = useState(true);
-  const [categories, setCategories] = useState<string[]>([]); // ✅ ADICIONADO
+  const [categories, setCategories] = useState<string[]>([]); 
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -66,7 +66,7 @@ export default function DashboardPage() {
           setLoading(false);
         }
       } catch (err: any) {
-        console.error("❌ Erro ao carregar usuário:", err);
+        console.error(" Erro ao carregar usuário:", err);
         setError("Erro ao carregar dados do usuário");
         toast.error("Erro ao carregar dados. Faça login novamente.");
 
@@ -80,7 +80,6 @@ export default function DashboardPage() {
     loadUserData();
   }, [router]);
 
-  // ✅ CARREGAR TODOS OS PRODUTOS COM PAGINAÇÃO
   useEffect(() => {
     const loadProducts = async () => {
       try {
@@ -104,15 +103,15 @@ export default function DashboardPage() {
           const data = await res.json();
 
           if (data.products && Array.isArray(data.products)) {
-            // ✅ MAPEAR _id PARA id
+          
             const mappedProducts = data.products.map((p: any) => ({
               ...p,
-              id: p._id || p.id,  // Garante que sempre terá id
+              id: p._id || p.id,  
             }));
             allProductsList = [...allProductsList, ...mappedProducts];
             totalPages = data.pages || 1;
           } else if (Array.isArray(data)) {
-            // ✅ MAPEAR _id PARA id
+            
             const mappedProducts = data.map((p: any) => ({
               ...p,
               id: p._id || p.id,
@@ -127,9 +126,9 @@ export default function DashboardPage() {
         console.log(`✅ Dashboard: ${allProductsList.length} produtos carregados`);
         setAllProducts(allProductsList);
 
-        // ✅ EXTRAIR CATEGORIAS ÚNICAS
+        // Extrair categorias únicas
         const uniqueCategories = [...new Set(allProductsList.map((p) => p.category))].filter(Boolean);
-        console.log(`✅ ${uniqueCategories.length} categorias encontradas:`, uniqueCategories);
+        console.log(` ${uniqueCategories.length} categorias encontradas:`, uniqueCategories);
         setCategories(uniqueCategories);
       } catch (error) {
         console.error("Erro ao carregar produtos:", error);
@@ -159,7 +158,6 @@ export default function DashboardPage() {
   if (error) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-black">
-        <div className="text-red-600 text-6xl mb-4">⚠️</div>
         <h2 className="text-2xl font-bold text-white mb-2">
           Ops! Algo deu errado
         </h2>
@@ -180,12 +178,10 @@ export default function DashboardPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
-      {/* ✅ BACKGROUND IMAGE FIXO */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/image-fundo-2.jpg')" }}
       />
-      {/* Overlay escuro */}
       <div className="fixed inset-0 -z-10 bg-black/50" />
 
       <div className="relative z-10 flex flex-col min-h-screen">
@@ -215,10 +211,10 @@ export default function DashboardPage() {
               </div>
             ) : (
               <>
-                {/* ✅ LAYOUT DESKTOP: 2 CARDS DE CADA LADO COM CATEGORIAS DIFERENTES */}
+                {/* LAYOUT DESKTOP: 2 COLUNAS LATERAIS */}
                 <div className="hidden lg:block">
                   <div className="relative min-h-[700px] w-full">
-                    {/* ✅ Cards da Esquerda - Primeiras 2 categorias */}
+                    {/* Cards da Esquerda - Primeiras 2 categorias */}
                     <div className="absolute left-4 xl:left-10 top-0 w-64 xl:w-72 flex flex-col gap-6">
                       {categories.slice(0, 2).map((category, index) => (
                         <CardAnime
@@ -232,7 +228,7 @@ export default function DashboardPage() {
                       ))}
                     </div>
 
-                    {/* ✅ Cards da Direita - Próximas 2 categorias */}
+                    {/* Cards da Direita - Próximas 2 categorias */}
                     <div className="absolute right-4 xl:right-10 top-0 w-64 xl:w-72 flex flex-col gap-6">
                       {categories.slice(2, 4).map((category, index) => (
                         <CardAnime
@@ -248,7 +244,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* ✅ LAYOUT TABLET: 2 COLUNAS */}
+                {/* LAYOUT TABLET: 2 COLUNAS */}
                 <div className="hidden md:block lg:hidden">
                   <div className="grid grid-cols-2 gap-6 mx-auto px-4 max-w-3xl">
                     {categories.slice(0, 4).map((category, index) => (
@@ -264,7 +260,7 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                {/* ✅ LAYOUT MOBILE: 1 COLUNA */}
+                {/* LAYOUT MOBILE: 1 COLUNA */}
                 <div className="block md:hidden">
                   <div className="flex flex-col gap-6 px-4 max-w-sm mx-auto">
                     {categories.slice(0, 4).map((category, index) => (

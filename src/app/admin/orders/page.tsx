@@ -345,7 +345,7 @@ export default function AdminOrdersPage() {
                 </button>
                 <div>
                   <h1 className="text-4xl font-bold text-yellow-400 mb-1">
-                    📦 Gerenciar Pedidos
+                     Gerenciar Pedidos
                   </h1>
                   <p className="text-white/80">Painel de administração de pedidos</p>
                 </div>

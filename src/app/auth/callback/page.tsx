@@ -49,7 +49,7 @@ export default function AuthCallbackPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
         <div className="bg-white p-8 rounded-lg shadow-lg max-w-md w-full">
           <div className="text-center">
-            <div className="text-red-500 text-5xl mb-4">⚠️</div>
+            <div className="text-red-500 text-5xl mb-4">!</div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">
               Erro na autenticação
             </h1>

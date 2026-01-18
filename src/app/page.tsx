@@ -17,12 +17,10 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
-      {/* ✅ BACKGROUND IMAGE FIXO */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/image-fundo-1.jpg')" }}
       />
-      {/* Overlay escuro */}
       <div className="fixed inset-0 -z-10 bg-black/40" />
 
       <div className="relative z-10 flex-1 overflow-y-auto">

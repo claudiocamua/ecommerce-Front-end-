@@ -67,7 +67,7 @@ export default function NewProductPage() {
         return;
       }
 
-      console.log("📷 Imagem selecionada:", file.name, file.size, "bytes");
+      console.log(" Imagem selecionada:", file.name, file.size, "bytes");
       setImage(file);
       
       const reader = new FileReader();
@@ -152,7 +152,7 @@ export default function NewProductPage() {
       //  ADICIONAR IMAGEM (OBRIGATÓRIO)
       productFormData.append("images", image);
 
-      console.log("📤 Criando produto com FormData:");
+      console.log(" Criando produto com FormData:");
       console.log("- Nome:", formData.name);
       console.log("- Preço:", formData.price);
       console.log("- Categoria:", `${formData.gender} - ${formData.category}`);
@@ -200,7 +200,7 @@ export default function NewProductPage() {
     <div className="min-h-screen bg-gray-900 text-white p-6">
       <div className="max-w-2xl mx-auto">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">➕ Novo Produto</h1>
+          <h1 className="text-3xl font-bold"> Novo Produto</h1>
           <button
             type="button"
             onClick={() => router.push("/admin/products")}

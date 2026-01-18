@@ -39,23 +39,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       setLoading(true);
       const data = await cartService.getCart();
-      
+
       console.log("📦 Dados do carrinho recebidos:", data);
-      
-      // ✅ CONVERTER FORMATO DO BACKEND PARA CONTEXTO
+
+      //CONVERTER FORMATO DO BACKEND PARA CONTEXTO
       const items = data.items.map((item: any) => ({
         id: item.product_id,
         product_id: item.product_id,
-        name: item.product_name,        // ✅ CORRIGIDO: product_name
-        price: item.product_price,      // ✅ CORRIGIDO: product_price
+        name: item.product_name,
+        price: item.product_price,
         quantity: item.quantity,
-        image: item.product_image,      // ✅ CORRIGIDO: product_image
+        image: item.product_image,
       }));
-      
-      console.log("✅ Carrinho convertido para contexto:", items);
+
+      console.log(" Carrinho convertido para contexto:", items);
       setCart(items);
     } catch (error) {
-      console.error("❌ Erro ao carregar carrinho:", error);
+      console.error(" Erro ao carregar carrinho:", error);
       setCart([]);
     } finally {
       setLoading(false);
@@ -68,11 +68,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
         product_id: product.product_id || product.id,
         quantity: product.quantity || 1,
       });
-      
+
       await loadCart();
       toast.success("Produto adicionado ao carrinho!");
     } catch (error: any) {
-      console.error("❌ Erro ao adicionar ao carrinho:", error);
+      console.error(" Erro ao adicionar ao carrinho:", error);
       toast.error(error.message || "Erro ao adicionar produto");
     }
   }
@@ -83,7 +83,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await loadCart();
       toast.success("Produto removido do carrinho");
     } catch (error: any) {
-      console.error("❌ Erro ao remover do carrinho:", error);
+      console.error(" Erro ao remover do carrinho:", error);
       toast.error(error.message || "Erro ao remover produto");
     }
   }
@@ -93,7 +93,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       await cartService.updateQuantity(productId, quantity);
       await loadCart();
     } catch (error: any) {
-      console.error("❌ Erro ao atualizar quantidade:", error);
+      console.error(" Erro ao atualizar quantidade:", error);
       toast.error(error.message || "Erro ao atualizar quantidade");
     }
   }
@@ -110,9 +110,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
     try {
       await cartService.clearCart();
       setCart([]);
-      console.log("✅ Carrinho limpo");
+      console.log(" Carrinho limpo");
     } catch (error) {
-      console.error("❌ Erro ao limpar carrinho:", error);
+      console.error(" Erro ao limpar carrinho:", error);
     }
   }
 

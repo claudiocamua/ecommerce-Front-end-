@@ -1,7 +1,7 @@
 import { create } from "zustand";
 
 type User = {
-  _id: string; // ✅ MUDEI DE id PARA _id
+  _id: string;
   email: string;
   full_name: string;
   is_active: boolean;
@@ -9,7 +9,7 @@ type User = {
   is_admin?: boolean;
   created_at: string;
 } | null;
-
+// Estado de autenticação
 type AuthState = {
   user: User;
   token: string | null;
@@ -18,7 +18,7 @@ type AuthState = {
   logout: () => void;
 };
 
-// ✅ Função para carregar dados do localStorage
+// Função para obter dados do localStorage
 const getStoredAuth = (): { user: User; token: string | null } => {
   if (typeof window === "undefined") {
     return { user: null, token: null };
@@ -36,13 +36,13 @@ const getStoredAuth = (): { user: User; token: string | null } => {
     
     return { user, token };
   } catch (error) {
-    console.error("❌ Erro ao carregar dados do localStorage:", error);
+    console.error(" Erro ao carregar dados do localStorage:", error);
     return { user: null, token: null };
   }
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
-  // ✅ Inicializar com dados do localStorage APENAS na criação
+  //  Inicializar com dados do localStorage APENAS na criação
   ...getStoredAuth(),
 
   setAuth: (user, token) => {

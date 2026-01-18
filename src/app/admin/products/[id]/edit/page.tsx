@@ -98,7 +98,7 @@ export default function EditProductPage() {
       const token = authService.getToken()
       const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
-      console.log("📡 Carregando produto:", productId)
+      console.log(" Carregando produto:", productId)
 
       const res = await fetch(`${baseURL}/products/${productId}`, {
         headers: {
@@ -422,7 +422,7 @@ export default function EditProductPage() {
             )}
           </div>
 
-          {/* ✨ IMAGENS ATUAIS */}
+          {/* IMAGENS ATUAIS */}
           {currentImages.length > 0 && (
             <div>
               <label className="block mb-2 font-semibold">Imagens Atuais</label>

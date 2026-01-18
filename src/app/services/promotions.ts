@@ -52,40 +52,36 @@ export interface CreatePromotionData {
   min_order_value?: number;
   max_uses_per_user?: number;
 }
-
+// Serviço de Promoções
 export const promotionsService = {
-  // GET /admin/promotions/
   async getAll(): Promise<Promotion[]> {
-    console.log("📤 Buscando promoções...");
+    console.log(" Buscando promoções...");
     const response = await api.get("/admin/promotions/");
-    console.log("📥 Promoções recebidas:", response.data);
+    console.log(" Promoções recebidas:", response.data);
     return response.data;
   },
 
-  // POST /admin/promotions/
+  
   async create(data: CreatePromotionData): Promise<Promotion> {
-    console.log("📤 Criando promoção:", data);
+    console.log(" Criando promoção:", data);
     const response = await api.post("/admin/promotions/", data);
-    console.log("📥 Promoção criada:", response.data);
+    console.log(" Promoção criada:", response.data);
     return response.data;
   },
 
-  // PUT /admin/promotions/{id}
   async update(id: string, data: Partial<CreatePromotionData>): Promise<Promotion> {
-    console.log(`📤 Atualizando promoção ${id}:`, data);
+    console.log(` Atualizando promoção ${id}:`, data);
     const response = await api.put(`/admin/promotions/${id}`, data);
-    console.log("📥 Promoção atualizada:", response.data);
+    console.log(" Promoção atualizada:", response.data);
     return response.data;
   },
 
-  // DELETE /admin/promotions/{id}
   async delete(id: string): Promise<void> {
-    console.log(`📤 Deletando promoção ${id}`);
+    console.log(` Deletando promoção ${id}`);
     await api.delete(`/admin/promotions/${id}`);
-    console.log("✅ Promoção deletada");
+    console.log("Promoção deletada");
   },
 
-  // POST /cart/apply-promotion (se implementado no backend)
   async applyToCart(couponCode?: string) {
     const response = await api.post("/cart/apply-promotion", {
       coupon_code: couponCode

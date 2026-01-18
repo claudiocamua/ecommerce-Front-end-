@@ -25,10 +25,9 @@ export interface User {
 class AuthService {
   async login(data: LoginData) {
     const response = await api.post("/auth/login", data);
-    
+    // Salvando token e usuário no localStorage e Zustand
     const { access_token, user } = response.data;
     
-    // ✅ SALVAR NO LOCALSTORAGE
     if (typeof window !== "undefined") {
       localStorage.setItem("token", access_token);
       localStorage.setItem("user", JSON.stringify(user));
@@ -84,7 +83,7 @@ class AuthService {
     }
     return null;
   }
-
+// Retorna o usuário autenticado ou null se não estiver autenticado
   getUser(): User | null {
     const zustandUser = useAuthStore.getState().user;
     if (zustandUser) return zustandUser;
@@ -113,7 +112,7 @@ class AuthService {
     }
     useAuthStore.getState().logout();
   }
-
+  // Login com Google
   async loginWithGoogle(googleToken: string) {
     try {
       const response = await api.post("/auth/google", { token: googleToken });
@@ -132,7 +131,7 @@ class AuthService {
       
       return { user, token: access_token };
     } catch (error) {
-      console.error("❌ Erro no login com Google:", error);
+      console.error(" Erro no login com Google:", error);
       throw error;
     }
   }

@@ -97,6 +97,7 @@ export default function OrdersPage() {
     setFilteredOrders(result);
   }, [orders, filterStatus, searchTerm, sortBy, sortOrder]);
 
+  // Função para buscar pedidos da API
   const fetchOrders = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -130,7 +131,7 @@ export default function OrdersPage() {
         setOrders([]);
       }
     } catch (err: any) {
-      console.error("❌ Erro ao buscar pedidos:", err);
+      console.error(" Erro ao buscar pedidos:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -244,7 +245,6 @@ export default function OrdersPage() {
 
   return (
     <div className="relative min-h-screen flex flex-col">
-      {/* Background */}
       <div
         className="fixed inset-0 -z-10 bg-cover bg-center bg-no-repeat"
         style={{ backgroundImage: "url('/image-fundo-4.jpg')" }}

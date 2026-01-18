@@ -34,14 +34,12 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [categories, setCategories] = useState<string[]>([]);
 
-  // ✅ Função auxiliar para montar URL da imagem
+  // Função para obter a URL completa da imagem
   const getImageUrl = (imageUrl: string): string => {
-    // Se já for uma URL completa (Cloudinary), retorna ela mesma
     if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
       return imageUrl;
     }
     
-    // URLs antigas do Render (fallback)
     const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     if (imageUrl.startsWith('/')) {
       return `${baseURL}${imageUrl}`;
@@ -50,7 +48,7 @@ export default function ProductsPage() {
     return `${baseURL}/${imageUrl}`;
   };
 
-  // ✅ CARREGAR TODOS OS PRODUTOS (SEM AUTENTICAÇÃO)
+  // Carregar todos os produtos (sem autenticação)
   useEffect(() => {
     const loadProducts = async () => {
       try {
@@ -61,7 +59,7 @@ export default function ProductsPage() {
         let currentPage = 1;
         let totalPages = 1;
 
-        // ✅ CARREGAR TODAS AS PÁGINAS
+        // Carregar todas as páginas
         do {
           const res = await fetch(`${baseURL}/products/?page=${currentPage}`, {
             method: "GET",
@@ -77,7 +75,6 @@ export default function ProductsPage() {
           const data = await res.json();
 
           if (data.products && Array.isArray(data.products)) {
-            // ✅ MAPEAR _id PARA id
             const mappedProducts = data.products.map((p: any) => ({
               ...p,
               id: p._id || p.id,
@@ -85,7 +82,6 @@ export default function ProductsPage() {
             allProductsList = [...allProductsList, ...mappedProducts];
             totalPages = data.pages || 1;
           } else if (Array.isArray(data)) {
-            // ✅ MAPEAR _id PARA id
             const mappedProducts = data.map((p: any) => ({
               ...p,
               id: p._id || p.id,
@@ -97,17 +93,17 @@ export default function ProductsPage() {
           currentPage++;
         } while (currentPage <= totalPages);
 
-        console.log(`✅ Produtos carregados: ${allProductsList.length}`);
+        console.log(` Produtos carregados: ${allProductsList.length}`);
         setProducts(allProductsList);
         setFilteredProducts(allProductsList);
 
-        // ✅ EXTRAIR CATEGORIAS ÚNICAS
+        // Extrair categorias únicas
         const uniqueCategories = [
           ...new Set(allProductsList.map((p) => p.category).filter(Boolean)),
         ];
         setCategories(uniqueCategories);
 
-        // ✅ APLICAR FILTROS DA URL
+        // Aplicar filtros da URL
         const searchQuery = searchParams.get("search");
         const categoryQuery = searchParams.get("category");
         
@@ -119,7 +115,7 @@ export default function ProductsPage() {
           setSelectedCategory(categoryQuery);
         }
       } catch (error) {
-        console.error("❌ Erro ao carregar produtos:", error);
+        console.error("Erro ao carregar produtos:", error);
         toast.error("Erro ao carregar produtos");
       } finally {
         setLoading(false);
@@ -129,7 +125,7 @@ export default function ProductsPage() {
     loadProducts();
   }, [searchParams]);
 
-  // ✅ FILTRAR PRODUTOS
+  // Filtrar produtos com base na categoria selecionada e termo de busca ativo
   useEffect(() => {
     let result = [...products];
 
@@ -178,7 +174,7 @@ export default function ProductsPage() {
       return;
     }
 
-    console.log("🔍 Redirecionando para produto:", productId);
+    console.log(" Redirecionando para produto:", productId);
     router.push(`/products/${productId}`);
   };
 
@@ -221,7 +217,7 @@ export default function ProductsPage() {
                     backgroundSize: '1.5rem'
                   }}
                 >
-                  <option value="" className="bg-black">📁 Todas as categorias</option>
+                  <option value="" className="bg-black">Todas as categorias</option>
                   {categories.map((cat) => (
                     <option className="bg-black" key={cat} value={cat}>
                       {cat}
@@ -255,7 +251,6 @@ export default function ProductsPage() {
         <div className="relative z-0">
           {filteredProducts.length === 0 ? (
             <div className="bg-white/90 backdrop-blur-md rounded-3xl p-16 text-center shadow-2xl">
-              <div className="text-8xl mb-6">😔</div>
               <h3 className="text-3xl font-bold text-gray-700 mb-4">
                 Nenhum produto encontrado
               </h3>
@@ -272,7 +267,7 @@ export default function ProductsPage() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredProducts.map((product) => {
-                // ✅ USAR discount_percentage
+                // Usar discount_percentage
                 const discountValue = product.discount_percentage || product.discount || 0;
                 const finalPrice = discountValue > 0
                   ? product.price * (1 - discountValue / 100)
@@ -298,7 +293,7 @@ export default function ProductsPage() {
                         />
                       ) : (
                         <div className="flex items-center justify-center h-full text-gray-400">
-                          📷 Sem imagem
+                           Sem imagem
                         </div>
                       )}
 

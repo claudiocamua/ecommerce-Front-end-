@@ -9,7 +9,7 @@ export async function GET(
   try {
     const { id } = await params;
     const token = request.headers.get("Authorization");
-    console.log("🔄 Proxy GET /orders/" + id);
+    console.log(" Proxy GET /orders/" + id);
 
     const response = await fetch(`${BACKEND_URL}/orders/${id}`, {
       method: "GET",
@@ -20,11 +20,11 @@ export async function GET(
     });
 
     const data = await response.json();
-    console.log("✅ Proxy: Pedido recebido:", data);
+    console.log(" Proxy: Pedido recebido:", data);
 
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
-    console.error("❌ Proxy: Erro ao buscar pedido:", error.message);
+    console.error(" Proxy: Erro ao buscar pedido:", error.message);
     return NextResponse.json(
       { detail: "Erro ao buscar pedido" },
       { status: 500 }
@@ -41,7 +41,7 @@ export async function PATCH(
     const token = request.headers.get("Authorization");
     const url = new URL(request.url);
     
-    console.log("🔄 Proxy PATCH /orders/" + id);
+    console.log(" Proxy PATCH /orders/" + id);
 
     // Cancelar pedido
     if (url.pathname.endsWith("/cancel")) {
@@ -54,7 +54,7 @@ export async function PATCH(
       });
 
       const data = await response.json();
-      console.log("✅ Proxy: Pedido cancelado:", data);
+      console.log(" Proxy: Pedido cancelado:", data);
 
       return NextResponse.json(data, { status: response.status });
     }
@@ -64,7 +64,7 @@ export async function PATCH(
       { status: 404 }
     );
   } catch (error: any) {
-    console.error("❌ Proxy: Erro ao atualizar pedido:", error.message);
+    console.error(" Proxy: Erro ao atualizar pedido:", error.message);
     return NextResponse.json(
       { detail: "Erro ao atualizar pedido" },
       { status: 500 }

@@ -39,7 +39,7 @@ interface Product {
   brand?: string;
   image_urls: string[];
   created_at: string;
-  sold_count?: number; // ✅ CAMPO PARA PRODUTOS MAIS VENDIDOS
+  sold_count?: number; 
 }
 
 export default function DestaquesPage() {
@@ -80,7 +80,7 @@ export default function DestaquesPage() {
       let currentPage = 1;
       let totalPages = 1;
 
-      // ✅ BUSCAR TODOS OS PRODUTOS
+      // BUSCAR TODOS OS PRODUTOS
       do {
         const res = await fetch(`${baseURL}/products/?page=${currentPage}`, {
           headers: {
@@ -103,11 +103,11 @@ export default function DestaquesPage() {
         currentPage++;
       } while (currentPage <= totalPages);
 
-      console.log(`✅ ${allProducts.length} produtos carregados`);
+      console.log(` ${allProducts.length} produtos carregados`);
 
-      // ✅ PRODUTOS MAIS CAROS (top 8)
+      // PRODUTOS MAIS CAROS
       const expensiveProducts = [...allProducts]
-        .filter(p => p.stock > 0) // Apenas com estoque
+        .filter(p => p.stock > 0) // Apenas produtos em estoque
         .sort((a, b) => {
           const priceA = a.discount_percentage 
             ? a.price * (1 - a.discount_percentage / 100) 
@@ -119,21 +119,22 @@ export default function DestaquesPage() {
         })
         .slice(0, 8);
 
-      console.log(`💰 ${expensiveProducts.length} produtos mais caros encontrados`);
+      console.log(` ${expensiveProducts.length} produtos mais caros encontrados`);
       setMostExpensiveProducts(expensiveProducts);
-
-      // ✅ PRODUTOS MAIS VENDIDOS (simulado - últimos 8 produtos criados)
-      // NOTA: Se sua API tiver um campo "sold_count", use ele aqui
+      // PRODUTOS MAIS VENDIDOS
       const bestSelling = [...allProducts]
         .filter(p => p.stock > 0)
         .sort((a, b) => {
-          // Se tiver campo sold_count, use: b.sold_count - a.sold_count
-          // Por enquanto, ordenando por data de criação (mais recentes)
+          // Ordenar por sold_count, se disponível
+          if (b.sold_count !== undefined && a.sold_count !== undefined) {
+            return b.sold_count - a.sold_count;
+          }
+          // Se sold_count não estiver disponível, ordenar por data de criação
           return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
         })
         .slice(0, 8);
 
-      console.log(`🔥 ${bestSelling.length} produtos em destaque encontrados`);
+      console.log(` ${bestSelling.length} produtos em destaque encontrados`);
       setBestSellingProducts(bestSelling);
 
     } catch (error) {
@@ -240,7 +241,6 @@ export default function DestaquesPage() {
             </div>
           )}
 
-          {/* Overlay no Hover */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
         </div>
 
@@ -327,7 +327,7 @@ export default function DestaquesPage() {
               <ComingSoon />
             </div>
 
-            {/* ✅ PRODUTOS MAIS CAROS */}
+            {/*PRODUTOS MAIS CAROS */}
             <section className="mb-12">
               <div className="bg-gradient-to-r from-yellow-400/20 to-orange-500/20 backdrop-blur-sm rounded-2xl p-6 mb-6 border-2 border-yellow-400/30">
                 <div className="flex items-center gap-3 mb-2">
@@ -352,7 +352,7 @@ export default function DestaquesPage() {
               )}
             </section>
 
-            {/* ✅ PRODUTOS MAIS VENDIDOS */}
+            {/*PRODUTOS MAIS VENDIDOS */}
             <section className="mb-12">
               <div className="bg-gradient-to-r from-red-500/20 to-orange-500/20 backdrop-blur-sm rounded-2xl p-6 mb-6 border-2 border-red-500/30">
                 <div className="flex items-center gap-3 mb-2">

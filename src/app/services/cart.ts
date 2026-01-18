@@ -19,7 +19,7 @@ export interface Cart {
 
 export const cartService = {
   async addToCart(product_id: string, quantity: number = 1) {
-    console.log("🛒 Adicionando ao carrinho:", { product_id, quantity });
+    console.log(" Adicionando ao carrinho:", { product_id, quantity });
     
     const response = await fetch("/api/cart/add", {
       method: "POST",
@@ -31,12 +31,12 @@ export const cartService = {
     });
 
     const data = await response.json();
-    console.log("✅ Produto adicionado:", data);
+    console.log(" Produto adicionado:", data);
     return data;
   },
 
   async getCart(): Promise<Cart> {
-    console.log("📡 Buscando carrinho do usuário...");
+    console.log(" Buscando carrinho do usuário...");
     
     const response = await fetch("/api/cart/add", {
       method: "GET",
@@ -48,19 +48,18 @@ export const cartService = {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error("❌ Erro ao buscar carrinho:", error);
+      console.error(" Erro ao buscar carrinho:", error);
       throw new Error(error.message || "Erro ao buscar carrinho");
     }
 
     const data = await response.json();
-    console.log("✅ Carrinho carregado:", data);
+    console.log(" Carrinho carregado:", data);
     return data;
   },
   
   async updateItem(product_id: string, quantity: number): Promise<Cart> {
-    console.log("🔄 Atualizando item:", { product_id, quantity });
+    console.log(" Atualizando item:", { product_id, quantity });
     
-    // ✅ USAR FETCH DIRETO PARA O BACKEND (respeita NEXT_PUBLIC_API_URL)
     const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     
     const response = await fetch(`${BACKEND_URL}/cart/items/${product_id}`, {
@@ -74,7 +73,7 @@ export const cartService = {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error("❌ Erro ao atualizar:", error);
+      console.error(" Erro ao atualizar:", error);
       
       if (response.status === 401) {
         localStorage.removeItem("token");
@@ -87,14 +86,14 @@ export const cartService = {
     }
 
     const data = await response.json();
-    console.log("✅ Item atualizado:", data);
+    console.log(" Item atualizado:", data);
     return data;
   },
 
   async removeItem(product_id: string): Promise<Cart> {
-    console.log("🗑️ Removendo item:", product_id);
+    console.log(" Removendo item:", product_id);
     
-    // ✅ USAR FETCH DIRETO PARA O BACKEND
+    // USAR FETCH DIRETO PARA O BACKEND
     const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     
     const response = await fetch(`${BACKEND_URL}/cart/items/${product_id}`, {
@@ -107,7 +106,7 @@ export const cartService = {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error("❌ Erro ao remover:", error);
+      console.error(" Erro ao remover:", error);
       
       if (response.status === 401) {
         localStorage.removeItem("token");
@@ -120,14 +119,14 @@ export const cartService = {
     }
 
     const data = await response.json();
-    console.log("✅ Item removido:", data);
+    console.log(" Item removido:", data);
     return data;
   },
 
   async clearCart(): Promise<void> {
-    console.log("🧹 Limpando carrinho...");
+    console.log(" Limpando carrinho...");
     
-    // ✅ USAR FETCH DIRETO PARA O BACKEND
+    // USAR FETCH DIRETO PARA O BACKEND
     const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
     
     const response = await fetch(`${BACKEND_URL}/cart/clear`, {
@@ -140,7 +139,7 @@ export const cartService = {
 
     if (!response.ok) {
       const error = await response.json();
-      console.error("❌ Erro ao limpar carrinho:", error);
+      console.error(" Erro ao limpar carrinho:", error);
       
       if (response.status === 401) {
         localStorage.removeItem("token");
@@ -152,6 +151,6 @@ export const cartService = {
       throw new Error(error.detail || "Erro ao limpar carrinho");
     }
 
-    console.log("✅ Carrinho limpo!");
+    console.log(" Carrinho limpo!");
   },
 };
