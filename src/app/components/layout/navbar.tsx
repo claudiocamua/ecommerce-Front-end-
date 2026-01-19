@@ -2,22 +2,21 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Menu, X, ShoppingBag, Package, User, LogOut } from "lucide-react";
+import { Menu, X, Package, User, LogOut } from "lucide-react";
 import { cn } from "../../../lib/utils";
 import Button from "../ui/Button";
 import ModalAuth from "../auth/ModalAuth";
 import { useAuthStore } from "@/store/useAuthStore";
+import { authService } from "@/app/services/auth";
 
 export default function Navbar() {
   const [authOpen, setAuthOpen] = useState(false);
   const [authType, setAuthType] = useState<"login" | "register">("login");
   const [isOpen, setIsOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const { user, logout } = useAuthStore();
-  const isAuthenticated = !!user;
-  const itemCount = 0;
 
-  // ✅ Escutar evento para abrir modal
   useEffect(() => {
     const handleOpenAuth = (e: CustomEvent) => {
       setAuthType(e.detail || 'login');
@@ -29,6 +28,10 @@ export default function Navbar() {
     return () => {
       window.removeEventListener('openAuthModal', handleOpenAuth as EventListener);
     };
+  }, []);
+
+  useEffect(() => {
+    setIsAuthenticated(authService.isAuthenticated());
   }, []);
 
   const navLinks = [
@@ -123,15 +126,6 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-4 md:hidden">
-            <Link href="/cart" className="relative p-2">
-              <ShoppingBag className="w-6 h-6" />
-              {itemCount > 0 && (
-                <span className="absolute -top-1 -right-1 w-5 h-5 bg-gold text-black text-xs font-bold rounded-full flex items-center justify-center">
-                  {itemCount > 99 ? "99+" : itemCount}
-                </span>
-              )}
-            </Link>
-
             <button onClick={() => setIsOpen(!isOpen)} className="p-2">
               {isOpen ? (
                 <X className="w-6 h-6 text-gold" />

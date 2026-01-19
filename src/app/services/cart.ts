@@ -1,4 +1,6 @@
-import api from "./api";
+import { authService } from "./auth";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export interface CartItem {
   _id: string;
@@ -16,141 +18,159 @@ export interface Cart {
   items: CartItem[];
   total: number;
 }
-
+// Serviço para gerenciar o carrinho de compras
 export const cartService = {
-  async addToCart(product_id: string, quantity: number = 1) {
-    console.log(" Adicionando ao carrinho:", { product_id, quantity });
-    
-    const response = await fetch("/api/cart/add", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      },
-      body: JSON.stringify({ product_id, quantity })
-    });
+  async addToCart(productId: string, quantity: number = 1) {
+    if (!authService.isAuthenticated()) {
+      throw new Error("Você precisa estar logado para adicionar produtos ao carrinho");
+    }
 
-    const data = await response.json();
-    console.log(" Produto adicionado:", data);
-    return data;
+    const token = authService.getToken();
+    
+    if (!token) {
+      throw new Error("Token de autenticação não encontrado");
+    }
+
+    try {
+      console.log(" Adicionando ao carrinho:", { productId, quantity });
+      
+      const response = await fetch(`${API_URL}/cart/add`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          quantity: quantity,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.detail || "Erro ao adicionar ao carrinho");
+      }
+
+      return await response.json();
+    } catch (error: any) {
+      console.error(" Erro ao adicionar ao carrinho:", error);
+      throw error;
+    }
   },
 
-  async getCart(): Promise<Cart> {
-    console.log(" Buscando carrinho do usuário...");
-    
-    const response = await fetch("/api/cart/add", {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      }
-    });
+  async getCart() {
+    if (!authService.isAuthenticated()) {
+      return { items: [], total: 0 };
+    }
 
-    if (!response.ok) {
-      const error = await response.json();
+    const token = authService.getToken();
+    
+    if (!token) {
+      return { items: [], total: 0 };
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/cart`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          authService.logout();
+          return { items: [], total: 0 };
+        }
+        throw new Error("Erro ao buscar carrinho");
+      }
+
+      return await response.json();
+    } catch (error) {
       console.error(" Erro ao buscar carrinho:", error);
-      throw new Error(error.message || "Erro ao buscar carrinho");
+      return { items: [], total: 0 };
     }
-
-    const data = await response.json();
-    console.log(" Carrinho carregado:", data);
-    return data;
-  },
-  
-  async updateItem(product_id: string, quantity: number): Promise<Cart> {
-    console.log(" Atualizando item:", { product_id, quantity });
-    
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    
-    const response = await fetch(`${BACKEND_URL}/cart/items/${product_id}`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      },
-      body: JSON.stringify({ quantity })
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error(" Erro ao atualizar:", error);
-      
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/";
-        throw new Error("Sessão expirada. Faça login novamente.");
-      }
-      
-      throw new Error(error.detail || "Erro ao atualizar quantidade");
-    }
-
-    const data = await response.json();
-    console.log(" Item atualizado:", data);
-    return data;
   },
 
-  async removeItem(product_id: string): Promise<Cart> {
-    console.log(" Removendo item:", product_id);
-    
-    // USAR FETCH DIRETO PARA O BACKEND
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    
-    const response = await fetch(`${BACKEND_URL}/cart/items/${product_id}`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      }
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      console.error(" Erro ao remover:", error);
-      
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/";
-        throw new Error("Sessão expirada. Faça login novamente.");
-      }
-      
-      throw new Error(error.detail || "Erro ao remover item");
+  async updateCartItem(productId: string, quantity: number) {
+    if (!authService.isAuthenticated()) {
+      throw new Error("Você precisa estar logado");
     }
 
-    const data = await response.json();
-    console.log(" Item removido:", data);
-    return data;
+    const token = authService.getToken();
+
+    try {
+      const response = await fetch(`${API_URL}/cart/update`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          product_id: productId,
+          quantity: quantity,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao atualizar item");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(" Erro ao atualizar item:", error);
+      throw error;
+    }
   },
 
-  async clearCart(): Promise<void> {
-    console.log(" Limpando carrinho...");
-    
-    // USAR FETCH DIRETO PARA O BACKEND
-    const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-    
-    const response = await fetch(`${BACKEND_URL}/cart/clear`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${localStorage.getItem("token")}`
-      }
-    });
+  async removeFromCart(productId: string) {
+    if (!authService.isAuthenticated()) {
+      throw new Error("Você precisa estar logado");
+    }
 
-    if (!response.ok) {
-      const error = await response.json();
+    const token = authService.getToken();
+
+    try {
+      const response = await fetch(`${API_URL}/cart/remove/${productId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao remover item");
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error(" Erro ao remover item:", error);
+      throw error;
+    }
+  },
+
+  async clearCart() {
+    if (!authService.isAuthenticated()) {
+      throw new Error("Você precisa estar logado");
+    }
+
+    const token = authService.getToken();
+
+    try {
+      const response = await fetch(`${API_URL}/cart/clear`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao limpar carrinho");
+      }
+
+      return await response.json();
+    } catch (error) {
       console.error(" Erro ao limpar carrinho:", error);
-      
-      if (response.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        window.location.href = "/";
-        throw new Error("Sessão expirada. Faça login novamente.");
-      }
-      
-      throw new Error(error.detail || "Erro ao limpar carrinho");
+      throw error;
     }
-
-    console.log(" Carrinho limpo!");
   },
 };
