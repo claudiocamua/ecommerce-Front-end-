@@ -188,7 +188,7 @@ export default function AdminUsuariosPage() {
 
     setFilteredUsers(filtered);
   };
-
+  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -232,7 +232,7 @@ export default function AdminUsuariosPage() {
       toast.error(error.message || "Erro ao salvar usuário");
     }
   };
-
+ // Alterar senha do usuário
   const handleChangePassword = async () => {
     if (!selectedUserId || !newPassword) {
       toast.error("Preencha a nova senha");
@@ -272,7 +272,7 @@ export default function AdminUsuariosPage() {
       toast.error(error.message || "Erro ao alterar senha");
     }
   };
-
+  // Promover usuário a administrador
   const handlePromote = async (userId: string) => {
     if (!confirm("Deseja promover este usuário a Administrador?")) return;
 

@@ -18,7 +18,6 @@ export async function GET(request: NextRequest) {
 
     console.log(" Proxy: Status da resposta:", response.status);
 
-    //  VERIFICAR SE A RESPOSTA É JSON
     const contentType = response.headers.get("content-type");
     console.log(" Content-Type:", contentType);
 

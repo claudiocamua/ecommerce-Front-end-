@@ -15,7 +15,6 @@ interface PaymentResponse {
 }
 
 export const paymentsService = {
-  // POST /payments/process
   async processPayment(data: PaymentData): Promise<PaymentResponse> {
     try {
       const response = await api.post("/payments/process", data);
@@ -25,7 +24,6 @@ export const paymentsService = {
     }
   },
 
-  // GET /payments/{payment_id}
   async getPaymentStatus(payment_id: string) {
     try {
       const response = await api.get(`/payments/${payment_id}`);

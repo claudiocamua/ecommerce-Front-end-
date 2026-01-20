@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
+import { authService } from "@/app/services/auth"; 
 import {
   CubeIcon,
   TagIcon,
@@ -15,46 +16,36 @@ import Link from "next/link";
 export default function AdminPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const init = async () => {
-      try {
-        const token = localStorage.getItem("access_token");
-        if (!token) {
-          router.push("/");
-          return;
-        }
+    console.log(" [ADMIN PAGE] Iniciando verificação...");
 
-        // Buscar dados do usuário
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+    if (!authService.isAuthenticated()) {
+      console.log(" [ADMIN PAGE] Não autenticado!");
+      toast.error("Você precisa estar logado!");
+      router.push("/login");
+      return;
+    }
+    // Verifica se o usuário é admin
+    const userData = authService.getUser();
+    console.log(" [ADMIN PAGE] Dados do usuário:", userData);
+    console.log(" [ADMIN PAGE] is_admin:", userData?.is_admin);
+    console.log(" [ADMIN PAGE] Tipo de is_admin:", typeof userData?.is_admin);
 
-        if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
+    if (!userData?.is_admin) {
+      console.log(" [ADMIN PAGE] Usuário não é admin!");
+      toast.error(" Acesso negado! Apenas administradores.");
+      router.push("/dashboard");
+      return;
+    }
 
-          // Verificar se é admin
-          if (!userData.is_admin) {
-            toast.error("Acesso negado! Apenas administradores.");
-            router.push("/");
-            return;
-          }
-        } else {
-          router.push("/");
-        }
-      } catch (error) {
-        console.error("Erro ao carregar perfil:", error);
-        router.push("/");
-      }
-    };
-
-    init();
+    console.log(" [ADMIN PAGE] Usuário é admin! Carregando painel...");
+    setUser(userData);
+    setLoading(false);
   }, [router]);
 
-  if (!user) {
+  if (loading) {
     return (
       <div className="relative min-h-screen flex flex-col">
         <div
@@ -66,11 +57,17 @@ export default function AdminPage() {
         <div className="relative z-10 flex items-center justify-center min-h-screen">
           <div className="text-center">
             <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-yellow-400 mx-auto mb-4"></div>
-            <p className="text-white font-semibold text-lg">Carregando...</p>
+            <p className="text-white font-semibold text-lg">
+              Verificando permissões...
+            </p>
           </div>
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return null; 
   }
 
   return (
@@ -96,6 +93,10 @@ export default function AdminPage() {
                     {user.full_name || user.name || user.email}
                   </span>
                 </p>
+                {/*  BADGE DE ADMIN */}
+                <span className="inline-block mt-2 px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full">
+                  ADMINISTRADOR ATIVO
+                </span>
               </div>
 
               <Link
@@ -194,7 +195,7 @@ export default function AdminPage() {
               </div>
               <div>
                 <div className="text-3xl font-bold text-green-400 mb-2">
-                  {user.is_admin ? "Admin" : "Usuário"}
+                  Administrador
                 </div>
                 <p className="text-white/70">Nível de Acesso</p>
               </div>

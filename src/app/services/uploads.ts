@@ -1,5 +1,5 @@
 import api from "./api";
-// Serviço de Uploads
+
 export const uploadsService = {
 
   async uploadProductImage(product_id: string, file: File) {

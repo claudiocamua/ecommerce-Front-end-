@@ -101,17 +101,16 @@ export default function CardAnime({
     setTimeout(() => setSelectedProduct(null), 200);
   };
 
-  // ✅ CORRIGIDO: usar addToCart em vez de addItem
+  // Função para adicionar ao carrinho
   const handleAddToCart = async (productId: string, quantity: number) => {
     try {
-      console.log("🛒 Adicionando ao carrinho:", { productId, quantity });
+      console.log(" Adicionando ao carrinho:", { productId, quantity });
       await cartService.addToCart(productId, quantity);
       toast.success(`${quantity}x produto adicionado ao carrinho!`, {
-        icon: "🛒",
         duration: 2000,
       });
     } catch (error: any) {
-      console.error("❌ Erro ao adicionar:", error);
+      console.error(" Erro ao adicionar:", error);
       toast.error(error.message || error.detail || "Erro ao adicionar ao carrinho");
     }
   };
@@ -136,7 +135,7 @@ export default function CardAnime({
         ${isVisible ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-12 scale-95"}
       `}
     >
-      {/* ✅ CARD COMPACTO COM 2 PRODUTOS */}
+      {/*  CARD COMPACTO COM 2 PRODUTOS */}
       <div className="bg-gradient-to-br from-white/95 via-white/90 to-white/85 backdrop-blur-md rounded-2xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-300 border border-yellow-400/30">
         {/* Header do Card */}
         <div className="bg-gradient-to-r from-yellow-400 via-yellow-500 to-yellow-400 p-3">
@@ -174,7 +173,7 @@ export default function CardAnime({
                     />
                   ) : (
                     <div className="flex items-center justify-center h-full text-gray-400 text-xs">
-                      📷
+                      img
                     </div>
                   )}
 

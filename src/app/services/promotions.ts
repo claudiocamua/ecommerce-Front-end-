@@ -1,4 +1,4 @@
-import api from "./api";
+import api from '@/lib/axios'; 
 
 export interface PromotionTier {
   min_amount: number;
@@ -46,46 +46,38 @@ export interface CreatePromotionData {
   coupon_discount_type?: "percentage" | "fixed";
   coupon_discount_value?: number;
   max_uses?: number;
-  progressive_tiers?: PromotionTier[];
-  product_ids?: string[];
-  category_ids?: string[];
-  min_order_value?: number;
   max_uses_per_user?: number;
+  min_order_value?: number;
+  product_ids?: string[];
+  progressive_tiers?: Array<{ min_amount: number; discount_percentage: number }>;
 }
+
 // Serviço de Promoções
 export const promotionsService = {
-  async getAll(): Promise<Promotion[]> {
-    console.log(" Buscando promoções...");
-    const response = await api.get("/admin/promotions/");
-    console.log(" Promoções recebidas:", response.data);
+  async getAll() {
+    console.log(' [PROMOTIONS] Iniciando busca de promoções...');
+    const response = await api.get('/promotions'); 
+    console.log(' [PROMOTIONS] Promoções recebidas:', response.data.length);
     return response.data;
   },
 
-  
-  async create(data: CreatePromotionData): Promise<Promotion> {
-    console.log(" Criando promoção:", data);
-    const response = await api.post("/admin/promotions/", data);
-    console.log(" Promoção criada:", response.data);
+  async create(data: CreatePromotionData) {
+    console.log(' [PROMOTIONS] Criando promoção:', data);
+    const response = await api.post('/promotions', data);
+    console.log(' [PROMOTIONS] Promoção criada:', response.data);
     return response.data;
   },
 
-  async update(id: string, data: Partial<CreatePromotionData>): Promise<Promotion> {
-    console.log(` Atualizando promoção ${id}:`, data);
-    const response = await api.put(`/admin/promotions/${id}`, data);
-    console.log(" Promoção atualizada:", response.data);
+  async update(id: string, data: Partial<CreatePromotionData>) {
+    console.log(' [PROMOTIONS] Atualizando promoção:', id, data);
+    const response = await api.put(`/promotions/${id}`, data);
+    console.log(' [PROMOTIONS] Promoção atualizada:', response.data);
     return response.data;
   },
 
-  async delete(id: string): Promise<void> {
-    console.log(` Deletando promoção ${id}`);
-    await api.delete(`/admin/promotions/${id}`);
-    console.log("Promoção deletada");
+  async delete(id: string) {
+    console.log(' [PROMOTIONS] Deletando promoção:', id);
+    await api.delete(`/promotions/${id}`);
+    console.log(' [PROMOTIONS] Promoção deletada');
   },
-
-  async applyToCart(couponCode?: string) {
-    const response = await api.post("/cart/apply-promotion", {
-      coupon_code: couponCode
-    });
-    return response.data;
-  }
 };

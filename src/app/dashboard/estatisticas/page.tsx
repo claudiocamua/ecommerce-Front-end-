@@ -141,7 +141,7 @@ export default function EstatisticasPage() {
         Object.keys(categoryCount).length > 0
           ? Object.entries(categoryCount).sort((a, b) => b[1] - a[1])[0][0]
           : "Nenhuma";
-      // Data do último pedido
+      
       const lastOrderDate =
         orders.length > 0
           ? orders.sort(

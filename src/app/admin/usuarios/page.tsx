@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import { useRouter } from "next/navigation";
 import {
   UserPlusIcon,
   PencilIcon,
@@ -9,6 +10,7 @@ import {
   ShieldCheckIcon,
   UserIcon,
   MagnifyingGlassIcon,
+  ArrowLeftIcon,
 } from "@heroicons/react/24/outline";
 
 interface User {
@@ -26,6 +28,7 @@ interface User {
 }
 
 export default function UsuariosPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -271,16 +274,26 @@ export default function UsuariosPage() {
     <div className="min-h-screen bg-white/50 p-6">
       <div className="max-w-7xl mx-auto">
 
-        <div className=" rounded-lg shadow-sm p-6 mb-6">
+        <div className="rounded-lg shadow-sm p-6 mb-6">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-                <UserIcon className="w-8 h-8 text-yellow-600" />
-                Gerenciar Usuários 
-              </h1>
-              <p className="text-white mt-1">
-                Total de {users.length} usuários cadastrados
-              </p>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => router.back()}
+                className="flex items-center gap-2 px-3 py-2 text-white hover:text-yellow-600 transition-colors"
+                title="Voltar"
+              >
+                <ArrowLeftIcon className="w-5 h-5" />
+                <span className="hidden sm:inline">Voltar</span>
+              </button>
+              <div>
+                <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+                  <UserIcon className="w-8 h-8 text-yellow-600" />
+                  Gerenciar Usuários 
+                </h1>
+                <p className="text-white mt-1">
+                  Total de {users.length} usuários cadastrados
+                </p>
+              </div>
             </div>
             <button
               onClick={() => {

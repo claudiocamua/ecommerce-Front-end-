@@ -1,12 +1,19 @@
 import axios from "axios";
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL || "";
+
+console.log(" Variáveis de ambiente:");
+console.log("NEXT_PUBLIC_API_URL:", process.env.NEXT_PUBLIC_API_URL);
+console.log("NEXT_PUBLIC_BACKEND_URL:", process.env.NEXT_PUBLIC_BACKEND_URL);
+console.log(" API_URL final:", API_URL);
+
 const api = axios.create({
-  baseURL: 'http://localhost:8000',  
+  baseURL: API_URL,
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
-// INTERCEPTOR DE REQUISIÇÃO PARA ADICIONAR TOKEN E DEBUG
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   

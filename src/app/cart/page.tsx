@@ -18,32 +18,59 @@ export default function CartPage() {
   const [loading, setLoading] = useState(true);
   const [updatingItems, setUpdatingItems] = useState<Set<string>>(new Set());
 
+  const formatPrice = (value: any): string => {
+    const num = Number(value);
+    if (isNaN(num) || value === null || value === undefined) {
+      return "0.00";
+    }
+    return num.toFixed(2);
+  };
+
+  const getSafeNumber = (value: any, defaultValue: number = 0): number => {
+    const num = Number(value);
+    return isNaN(num) ? defaultValue : num;
+  };
+
+  const calculateFinalPrice = (
+    originalPrice: number,
+    discount?: number,
+    discountPercentage?: number
+  ): number => {
+    const discountValue = discountPercentage || discount || 0;
+    if (discountValue > 0) {
+      return originalPrice * (1 - discountValue / 100);
+    }
+    return originalPrice;
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Verificar autenticação
+        console.log("[CART PAGE] Verificando autenticacao...");
+        
         if (!authService.isAuthenticated()) {
-          toast.error("Faça login para acessar o carrinho");
+          console.log("[CART PAGE] Nao autenticado");
+          toast.error("Faca login para acessar o carrinho");
           router.push("/auth");
           return;
         }
 
-        // Obter dados do usuário
         let userData = authService.getUser();
+        console.log("[CART PAGE] Usuario:", userData);
         
-        // Se não tiver no localStorage, buscar da API
         if (!userData) {
+          console.log("[CART PAGE] Buscando perfil...");
           userData = await authService.getProfile();
           authService.saveUser(userData);
         }
 
         setUser(userData);
         
-        // Carregar carrinho
+        console.log("[CART PAGE] Carregando carrinho...");
         await loadCart();
       } catch (error: any) {
-        console.error("Erro ao verificar autenticação:", error);
-        toast.error("Sessão expirada. Faça login novamente.");
+        console.error("[CART PAGE] Erro:", error);
+        toast.error("Sessao expirada. Faca login novamente.");
         authService.logout();
         router.push("/auth");
       }
@@ -54,11 +81,23 @@ export default function CartPage() {
 
   const loadCart = async () => {
     try {
+      console.log("[CART PAGE] Buscando carrinho...");
       const data = await cartService.getCart();
+      console.log("[CART PAGE] Dados completos recebidos:", JSON.stringify(data, null, 2));
+      console.log("[CART PAGE] Items array:", data?.items);
+      
+      if (data?.items && data.items.length > 0) {
+        data.items.forEach((item: any, index: number) => {
+          console.log(`[CART PAGE] Item ${index}:`, JSON.stringify(item, null, 2));
+        });
+      }
+      
       setCart(data);
     } catch (error: any) {
+      console.error("[CART PAGE] Erro ao carregar:", error);
+      
       if (error.response?.status === 404) {
-        // Carrinho vazio
+        console.log("[CART PAGE] Carrinho vazio (404)");
         setCart({
           user_id: "",
           items: [],
@@ -67,13 +106,11 @@ export default function CartPage() {
           updated_at: new Date().toISOString(),
         });
       } else if (error.response?.status === 401) {
-        // Não autenticado
-        toast.error("Sessão expirada. Faça login novamente.");
+        toast.error("Sessao expirada. Faca login novamente.");
         authService.logout();
         router.push("/auth");
       } else {
         toast.error("Erro ao carregar carrinho");
-        console.error("Erro ao carregar carrinho:", error);
       }
     } finally {
       setLoading(false);
@@ -88,7 +125,7 @@ export default function CartPage() {
 
     setUpdatingItems((prev) => new Set(prev).add(product_id));
     try {
-      const updatedCart = await cartService.updateItem(product_id, newQuantity);
+      const updatedCart = await cartService.updateCartItem(product_id, newQuantity);
       setCart(updatedCart);
       toast.success("Quantidade atualizada");
     } catch (error: any) {
@@ -101,25 +138,21 @@ export default function CartPage() {
       });
     }
   };
-  
 
-  // Remover item do carrinho
   const removeItem = async (productId: string) => {
     try {
-      const updatedCart = await cartService.removeItem(productId);
-      
+      const updatedCart = await cartService.removeFromCart(productId);
       setCart({
         ...updatedCart,
         items: updatedCart.items || []  
       });
-      
       toast.success("Item removido do carrinho");
     } catch (error: any) {
       console.error("Erro ao remover item:", error);
       toast.error(error.message || "Erro ao remover item");
     }
   };
-  // Limpar todo o carrinho
+
   const clearCart = async () => {
     if (!confirm("Deseja limpar todo o carrinho?")) return;
 
@@ -141,20 +174,16 @@ export default function CartPage() {
     }
   };
 
-  // Obter URL da imagem
-  const getImageUrl = (imageUrl: string | null) => {
+  const getImageUrl = (imageUrl: string | null | undefined) => {
     if (!imageUrl) return null;
     
-    // Se for URL do Cloudinary, retornar direto
     if (imageUrl.startsWith("http")) {
       return imageUrl;
     }
     
-    // Se for path relativo, adicionar base URL
     return `${process.env.NEXT_PUBLIC_API_URL}${imageUrl}`;
   };
 
-  // Exibir loading enquanto carrega
   if (loading || !user) {
     return (
       <div className="relative min-h-screen flex flex-col">
@@ -195,7 +224,7 @@ export default function CartPage() {
               <div className="bg-white/10 backdrop-blur-md rounded-3xl p-12 text-center shadow-2xl border border-white/20 max-w-md">
                 <ShoppingCartIcon className="w-20 h-20 mx-auto mb-6 text-yellow-400" />
                 <h2 className="text-3xl font-bold text-white mb-4">
-                  Seu carrinho está vazio
+                  Seu carrinho esta vazio
                 </h2>
                 <p className="text-white/80 mb-8 text-lg">
                   Adicione produtos para continuar comprando
@@ -218,14 +247,13 @@ export default function CartPage() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  {/* Lista de Produtos */}
                   <div className="lg:col-span-2">
                     <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 overflow-hidden">
                       <div className="p-6 border-b border-white/20">
                         <div className="flex justify-between items-center">
                           <h2 className="text-2xl font-semibold text-white">
-                            {cart.total_items}{" "}
-                            {cart.total_items === 1 ? "item" : "itens"}
+                            {getSafeNumber(cart.total_items)}{" "}
+                            {getSafeNumber(cart.total_items) === 1 ? "item" : "itens"}
                           </h2>
                           <button
                             onClick={clearCart}
@@ -237,119 +265,217 @@ export default function CartPage() {
                       </div>
 
                       <div className="divide-y divide-white/10">
-                        {cart.items.map((item) => (
-                          <div key={item.product_id} className="p-6 hover:bg-white/5 transition-colors">
-                            <div className="flex gap-4">
-                              {/* Imagem do Produto */}
-                              <div className="relative w-24 h-24 bg-gray-700/50 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center border-2 border-white/10">
-                                {item.product_image && getImageUrl(item.product_image) ? (
-                                  <Image
-                                    src={getImageUrl(item.product_image)!}
-                                    alt={item.product_name}
-                                    fill
-                                    sizes="96px"
-                                    className="object-cover"
-                                    onError={(e) => {
-                                      const target = e.target as HTMLImageElement;
-                                      target.style.display = "none";
-                                    }}
-                                  />
-                                ) : (
-                                  <CubeIcon className="w-12 h-12 text-white/60" />
-                                )}
-                              </div>
+                        {cart.items.map((item: any) => {
+                          console.log("[CART PAGE] ========== ITEM COMPLETO ==========");
+                          console.log("[CART PAGE] Item bruto:", JSON.stringify(item, null, 2));
+                          
+                          const productData = item.product || item;
+                          
+                          const productName = productData.name || item.product_name || "Produto sem nome";
+                          const originalPrice = getSafeNumber(productData.price || item.product_price || item.price, 0);
+                          
+                          let discountValue = 0;
+                          if (item.product?.discount_percentage !== undefined && item.product?.discount_percentage !== null) {
+                            discountValue = getSafeNumber(item.product.discount_percentage, 0);
+                          } else if (productData.discount_percentage !== undefined && productData.discount_percentage !== null) {
+                            discountValue = getSafeNumber(productData.discount_percentage, 0);
+                          } else if (item.discount_percentage !== undefined && item.discount_percentage !== null) {
+                            discountValue = getSafeNumber(item.discount_percentage, 0);
+                          }
+                          
+                          const productImage = productData.image_url || productData.image_urls?.[0] || item.product_image || null;
+                          const quantity = getSafeNumber(item.quantity, 1);
+                          
+                          const finalPrice = discountValue > 0 
+                            ? originalPrice * (1 - discountValue / 100)
+                            : originalPrice;
+                          const itemSubtotal = finalPrice * quantity;
+                          
+                          const inStock = item.in_stock !== false;
+                          const availableStock = getSafeNumber(item.available_stock, 999);
+                          
+                          return (
+                            <div key={item.product_id || item._id || item.id} className="p-6 hover:bg-white/5 transition-colors">
+                              <div className="flex gap-4">
+                                <div className="relative w-24 h-24 bg-gray-700/50 rounded-xl flex-shrink-0 overflow-hidden flex items-center justify-center border-2 border-white/10">
+                                  {productImage && getImageUrl(productImage) ? (
+                                    <Image
+                                      src={getImageUrl(productImage)!}
+                                      alt={productName}
+                                      fill
+                                      sizes="96px"
+                                      className="object-cover"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = "none";
+                                      }}
+                                    />
+                                  ) : (
+                                    <CubeIcon className="w-12 h-12 text-white/60" />
+                                  )}
+                                  
+                                  {discountValue > 0 && (
+                                    <div className="absolute top-1 right-1 bg-red-600 text-white text-xs px-1.5 py-0.5 rounded-full font-bold animate-pulse">
+                                      -{discountValue.toFixed(0)}%
+                                    </div>
+                                  )}
+                                </div>
 
-                              {/* Informações do Produto */}
-                              <div className="flex-1">
-                                <h3 className="font-bold text-xl text-white mb-2">
-                                  {item.product_name}
-                                </h3>
-                                <p className="text-yellow-400 font-bold text-lg mb-3">
-                                  R$ {item.product_price.toFixed(2)}
-                                </p>
+                                <div className="flex-1">
+                                  <h3 className="font-bold text-xl text-white mb-2">
+                                    {productName}
+                                  </h3>
+                                  
+                                  {discountValue > 0 ? (
+                                    <div className="mb-3">
+                                      <p className="text-gray-400 line-through text-sm">
+                                        R$ {formatPrice(originalPrice)}
+                                      </p>
+                                      <div className="flex items-baseline gap-2 flex-wrap">
+                                        <p className="text-green-400 font-bold text-lg">
+                                          R$ {formatPrice(finalPrice)}
+                                        </p>
+                                        <span className="text-xs text-green-400 font-semibold bg-green-400/10 px-2 py-1 rounded">
+                                          Economize R$ {formatPrice(originalPrice - finalPrice)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <p className="text-yellow-400 font-bold text-lg mb-3">
+                                      R$ {formatPrice(originalPrice)}
+                                    </p>
+                                  )}
 
-                                {!item.in_stock && (
-                                  <p className="text-red-400 text-sm mb-3 font-semibold">
-                                     Estoque insuficiente ({item.available_stock} disponíveis)
+                                  {!inStock && (
+                                    <p className="text-red-400 text-sm mb-3 font-semibold bg-red-400/10 px-2 py-1 rounded inline-block">
+                                      Estoque insuficiente ({availableStock} disponiveis)
+                                    </p>
+                                  )}
+
+                                  <div className="flex items-center gap-4">
+                                    <button
+                                      onClick={() =>
+                                        updateQuantity(item.product_id || item.id, quantity - 1)
+                                      }
+                                      disabled={updatingItems.has(item.product_id || item.id)}
+                                      className="w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      -
+                                    </button>
+                                    <span className="w-14 text-center font-bold text-white text-lg">
+                                      {quantity}
+                                    </span>
+                                    <button
+                                      onClick={() =>
+                                        updateQuantity(item.product_id || item.id, quantity + 1)
+                                      }
+                                      disabled={
+                                        updatingItems.has(item.product_id || item.id) ||
+                                        quantity >= availableStock
+                                      }
+                                      className="w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                      +
+                                    </button>
+                                    <button
+                                      onClick={() => removeItem(item.product_id || item.id)}
+                                      disabled={updatingItems.has(item.product_id || item.id)}
+                                      className="ml-auto text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
+                                    >
+                                      Remover
+                                    </button>
+                                  </div>
+                                </div>
+
+                                <div className="text-right">
+                                  <p className="text-2xl font-bold text-white">
+                                    R$ {formatPrice(itemSubtotal)}
                                   </p>
-                                )}
-
-                                {/* Controles de Quantidade */}
-                                <div className="flex items-center gap-4">
-                                  <button
-                                    onClick={() =>
-                                      updateQuantity(item.product_id, item.quantity - 1)
-                                    }
-                                    disabled={updatingItems.has(item.product_id)}
-                                    className="w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    -
-                                  </button>
-                                  <span className="w-14 text-center font-bold text-white text-lg">
-                                    {item.quantity}
-                                  </span>
-                                  <button
-                                    onClick={() =>
-                                      updateQuantity(item.product_id, item.quantity + 1)
-                                    }
-                                    disabled={
-                                      updatingItems.has(item.product_id) ||
-                                      item.quantity >= item.available_stock
-                                    }
-                                    className="w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                  >
-                                    +
-                                  </button>
-                                  <button
-                                    onClick={() => removeItem(item.product_id)}
-                                    disabled={updatingItems.has(item.product_id)}
-                                    className="ml-auto text-red-400 hover:text-red-300 font-semibold transition-colors disabled:opacity-50"
-                                  >
-                                    Remover
-                                  </button>
+                                  {discountValue > 0 && (
+                                    <p className="text-xs text-gray-400 line-through mt-1">
+                                      R$ {formatPrice(originalPrice * quantity)}
+                                    </p>
+                                  )}
                                 </div>
                               </div>
-
-                              {/* Subtotal */}
-                              <div className="text-right">
-                                <p className="text-2xl font-bold text-white">
-                                  R$ {item.subtotal.toFixed(2)}
-                                </p>
-                              </div>
                             </div>
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
 
-                  {/* Resumo do Pedido */}
                   <div className="lg:col-span-1">
                     <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl border border-white/20 p-6 sticky top-24">
                       <h2 className="text-2xl font-bold text-white mb-6">Resumo</h2>
 
-                      <div className="space-y-4 mb-6">
-                        <div className="flex justify-between text-lg">
-                          <span className="text-white/90">Subtotal</span>
-                          <span className="font-bold text-white">
-                            R$ {cart.subtotal.toFixed(2)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between text-lg">
-                          <span className="text-white/90">Frete</span>
-                          <span className="font-semibold text-white/70">
-                            Calculado no checkout
-                          </span>
-                        </div>
-                        <div className="border-t border-white/20 pt-4">
-                          <div className="flex justify-between items-center">
-                            <span className="text-xl font-bold text-white">Total</span>
-                            <span className="text-3xl font-bold text-yellow-400">
-                              R$ {cart.subtotal.toFixed(2)}
-                            </span>
+                      {(() => {
+                        // CALCULAR TOTAIS COM DESCONTO
+                        const calculatedSubtotal = cart.items.reduce((acc, item: any) => {
+                          const productData = item.product || item;
+                          const originalPrice = getSafeNumber(productData.price || item.price, 0);
+                          
+                          let discountValue = 0;
+                          if (item.product?.discount_percentage !== undefined) {
+                            discountValue = getSafeNumber(item.product.discount_percentage, 0);
+                          } else if (productData.discount_percentage !== undefined) {
+                            discountValue = getSafeNumber(productData.discount_percentage, 0);
+                          }
+                          
+                          const finalPrice = discountValue > 0 
+                            ? originalPrice * (1 - discountValue / 100)
+                            : originalPrice;
+                          const quantity = getSafeNumber(item.quantity, 1);
+                          
+                          return acc + (finalPrice * quantity);
+                        }, 0);
+
+                        const totalSemDesconto = cart.items.reduce((acc, item: any) => {
+                          const productData = item.product || item;
+                          const originalPrice = getSafeNumber(productData.price || item.price, 0);
+                          const quantity = getSafeNumber(item.quantity, 1);
+                          return acc + (originalPrice * quantity);
+                        }, 0);
+
+                        const totalEconomizado = totalSemDesconto - calculatedSubtotal;
+
+                        return (
+                          <div className="space-y-4 mb-6">
+                            {totalEconomizado > 0 && (
+                              <div className="flex justify-between text-sm">
+                                <span className="text-gray-400 line-through">Subtotal original</span>
+                                <span className="text-gray-400 line-through">R$ {formatPrice(totalSemDesconto)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between text-lg">
+                              <span className="text-white/90">Subtotal</span>
+                              <span className="font-bold text-white">
+                                R$ {formatPrice(calculatedSubtotal)}
+                              </span>
+                            </div>
+                            {totalEconomizado > 0 && (
+                              <div className="flex justify-between text-sm bg-green-400/10 p-3 rounded-lg">
+                                <span className="text-green-400 font-semibold">Você economiza</span>
+                                <span className="text-green-400 font-bold">R$ {formatPrice(totalEconomizado)}</span>
+                              </div>
+                            )}
+                            <div className="flex justify-between text-lg">
+                              <span className="text-white/90">Frete</span>
+                              <span className="font-semibold text-white/70">
+                                Calculado no checkout
+                              </span>
+                            </div>
+                            <div className="border-t border-white/20 pt-4">
+                              <div className="flex justify-between items-center">
+                                <span className="text-xl font-bold text-white">Total</span>
+                                <span className="text-3xl font-bold text-yellow-400">
+                                  R$ {formatPrice(calculatedSubtotal)}
+                                </span>
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
 
                       <Link
                         href="/checkout"

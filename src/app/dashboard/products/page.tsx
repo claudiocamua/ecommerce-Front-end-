@@ -232,8 +232,7 @@ export default function ProductsPage() {
 
       setProducts(allProducts);
       setFilteredProducts(allProducts);
-    
-      // Atualizar categorias
+  
       const allCategories = allProducts.map((p) => p.category).filter(Boolean);
       const uniqueCategories = [...new Set(allCategories)].sort();
       setCategories(uniqueCategories);
@@ -247,7 +246,6 @@ export default function ProductsPage() {
     }
   };
 
-  // APLICAR FILTROS
   useEffect(() => {
     console.log(" Aplicando filtros...");
     console.log(" Busca:", searchTerm);

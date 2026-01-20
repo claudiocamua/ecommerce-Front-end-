@@ -97,7 +97,7 @@ export default function AdminProductsPage() {
     }
   }
 
-  // Função auxiliar para pegar o ID correto
+  //Função auxiliar para obter ID do produto
   function getProductId(product: Product): string {
     return product.id || product._id || "";
   }
@@ -110,12 +110,10 @@ export default function AdminProductsPage() {
       return imageUrl;
     }
     
-    // Se começar com /, concatena com baseURL
     if (imageUrl.startsWith('/')) {
       return `${baseURL}${imageUrl}`;
     }
     
-    // Caso contrário, adiciona / antes
     return `${baseURL}/${imageUrl}`;
   }
 

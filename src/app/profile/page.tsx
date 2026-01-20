@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuthStore } from "@/store/useAuthStore";
+import { authService } from "@/app/services/auth";
 import Footer from "@/app/components/layout/Footer";
 import { toast } from "react-hot-toast";
 import {
@@ -18,109 +18,122 @@ import NavbarDashboard from "../components/dashboard/NavbarDashboard";
 interface UserProfile {
   id: string;
   email: string;
-  full_name: string;
+  name: string;
+  full_name?: string;
+  picture?: string;
   is_active: boolean;
   is_verified: boolean;
   created_at: string;
+  provider?: string;
 }
 
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [formData, setFormData] = useState({
-    full_name: "",
-    email: "",
+    name: "",
   });
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (!user) {
-        console.log(" Usuário não encontrado no store");
-        toast.error("Você precisa estar logado para acessar o perfil!");
-        router.push("/");
-        return;
+    if (!authService.isAuthenticated()) {
+      console.log(" Usuário não autenticado");
+      toast.error("Você precisa estar logado para acessar o perfil!");
+      router.push("/");
+      return;
+    }
+
+    const loadProfile = async () => {
+      try {
+        let user = authService.getUser();
+        if (!user) {
+          console.log(" Buscando perfil do backend...");
+          user = await authService.getProfile();
+          authService.saveUser(user);
+        }
+
+        console.log(" Usuário carregado:", user);
+
+        setProfile({
+          id: user.id,
+          email: user.email,
+          name: user.name || user.full_name || "Usuário",
+          full_name: user.full_name || user.name,
+          picture: user.picture,
+          is_active: user.is_active ?? true,
+          is_verified: user.is_verified ?? false,
+          created_at: user.created_at || new Date().toISOString(),
+          provider: user.provider || "credentials",
+        });
+
+        setFormData({
+          name: user.name || user.full_name || "",
+        });
+
+        setLoading(false);
+      } catch (error) {
+        console.error(" Erro ao carregar perfil:", error);
+        toast.error("Erro ao carregar perfil. Faça login novamente.");
+        authService.logout();
       }
+    };
 
-      console.log(" Usuário encontrado:", user);
-
-      setProfile({
-        id: user.id,
-        email: user.email,
-        full_name: user.full_name || "Usuário",
-        is_active: user.is_active || true,
-        is_verified: user.is_verified || false,
-        created_at: user.created_at || new Date().toISOString(),
-      });
-
-      setFormData({
-        full_name: user.full_name || "",
-        email: user.email || "",
-      });
-
-      setLoading(false);
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [user, router]);
+    loadProfile();
+  }, [router]);
 
   const handleSave = async () => {
-    if (!formData.full_name.trim()) {
-      toast.error("Nome completo não pode estar vazio!");
+    if (!formData.name.trim()) {
+      toast.error("Nome não pode estar vazio!");
       return;
     }
 
     setSaving(true);
 
     try {
-      const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      const token = localStorage.getItem("access_token");
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || process.env.NEXT_PUBLIC_BACKEND_URL;
+      const token = authService.getToken();
 
       if (!token) {
         toast.error("Token não encontrado. Faça login novamente.");
-        router.push("/");
+        authService.logout();
         return;
       }
 
-      console.log(" Atualizando perfil:", { full_name: formData.full_name });
+      console.log(" Atualizando perfil:", { name: formData.name });
 
-      // Chamada ao backend para atualizar o perfil
-      const res = await fetch(`${baseURL}/users/me`, {
+      const response = await fetch(`${API_URL}/auth/me`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          full_name: formData.full_name,
+          name: formData.name,
         }),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json();
-        console.error(" Erro do backend:", errorData);
+      if (!response.ok) {
+        const errorData = await response.json();
         throw new Error(errorData.detail || "Erro ao atualizar perfil");
       }
 
-      const data = await res.json();
-      console.log(" Resposta completa do backend:", data);
+      const updatedUser = await response.json();
+      console.log(" Perfil atualizado:", updatedUser);
 
-      const updatedUser = data.user;
-
-      useAuthStore.getState().setUser(updatedUser);
+      authService.saveUser(updatedUser);
 
       setProfile({
         ...profile!,
-        full_name: updatedUser.full_name,
+        name: updatedUser.name || updatedUser.full_name,
+        full_name: updatedUser.full_name || updatedUser.name,
       });
 
       toast.success("Perfil atualizado com sucesso!");
       setIsEditing(false);
     } catch (error: any) {
-      console.error(" Erro completo:", error);
+      console.error(" Erro ao atualizar perfil:", error);
       toast.error(error.message || "Erro ao atualizar perfil");
     } finally {
       setSaving(false);
@@ -128,9 +141,8 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
-    logout();
+    authService.logout();
     toast.success("Logout realizado com sucesso!");
-    router.push("/");
   };
 
   if (loading) {
@@ -163,18 +175,31 @@ export default function ProfilePage() {
       />
       <div className="fixed inset-0 -z-10 bg-black/60" />
 
-      <NavbarDashboard user={user} />
+      <NavbarDashboard user={profile} />
 
       <main className="flex-1 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full mt-24">
         {/* Header */}
         <div className="text-center mb-8">
-          <div className="w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl">
-            <UserIcon className="w-16 h-16 text-gray-900" />
+          <div className="w-32 h-32 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full mx-auto mb-6 flex items-center justify-center shadow-2xl overflow-hidden">
+            {profile.picture ? (
+              <img
+                src={profile.picture}
+                alt={profile.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <UserIcon className="w-16 h-16 text-gray-900" />
+            )}
           </div>
           <h1 className="text-4xl md:text-5xl font-bold text-yellow-400 mb-2">
-            {profile.full_name}
+            {profile.name}
           </h1>
           <p className="text-lg text-white/70">{profile.email}</p>
+          {profile.provider === "google" && (
+            <span className="inline-block mt-2 px-3 py-1 bg-white/10 text-white/80 rounded-full text-sm">
+               Conectado via Google
+            </span>
+          )}
         </div>
 
         {/* Informações do Perfil */}
@@ -194,19 +219,19 @@ export default function ProfilePage() {
             <div className="flex items-start gap-4">
               <UserIcon className="w-6 h-6 text-yellow-400 mt-1" />
               <div className="flex-1">
-                <label className="text-sm text-white/60 mb-1 block">Nome Completo</label>
+                <label className="text-sm text-white/60 mb-1 block">Nome</label>
                 {isEditing ? (
                   <input
                     type="text"
-                    value={formData.full_name}
+                    value={formData.name}
                     onChange={(e) =>
-                      setFormData({ ...formData, full_name: e.target.value })
+                      setFormData({ ...formData, name: e.target.value })
                     }
                     className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white focus:ring-2 focus:ring-yellow-400 focus:border-yellow-400"
-                    placeholder="Digite seu nome completo"
+                    placeholder="Digite seu nome"
                   />
                 ) : (
-                  <p className="text-white text-lg font-medium">{profile.full_name}</p>
+                  <p className="text-white text-lg font-medium">{profile.name}</p>
                 )}
               </div>
             </div>
@@ -276,8 +301,7 @@ export default function ProfilePage() {
                 onClick={() => {
                   setIsEditing(false);
                   setFormData({
-                    full_name: profile.full_name,
-                    email: profile.email,
+                    name: profile.name,
                   });
                 }}
                 disabled={saving}
@@ -313,7 +337,7 @@ export default function ProfilePage() {
             onClick={handleLogout}
             className="w-full px-6 py-4 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-all font-bold text-lg shadow-lg"
           >
-            Sair da Conta
+             Sair da Conta
           </button>
         </div>
       </main>

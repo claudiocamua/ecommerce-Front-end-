@@ -8,21 +8,25 @@ import { authService } from "@/app/services/auth";
 import { toast } from "react-hot-toast";
 
 interface OrderItem {
-  id: number;
-  product_id: number;
+  id: number | string; 
+  product_id: number | string;
   product_name: string;
   quantity: number;
   price: number;
 }
 
 interface Order {
-  id: number;
-  user_id: number;
+  id: number | string; 
+  user_id: number | string;
   status: string;
   total: number;
   created_at: string;
   items?: OrderItem[];
+  payment_status?: string; 
+  payment_method?: string;
 }
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export default function OrdersPage() {
   const router = useRouter();
@@ -36,21 +40,17 @@ export default function OrdersPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState<"date" | "total">("date");
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
-
+  // Estado para controlar a exibição dos detalhes do pedido
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Verificar autenticação
         if (!authService.isAuthenticated()) {
           toast.error("Faça login para acessar seus pedidos");
           router.push("/auth");
           return;
         }
-
-        // Obter dados do usuário
         let userData = authService.getUser();
         
-        // Se não tiver no localStorage, buscar da API
         if (!userData) {
           userData = await authService.getProfile();
           authService.saveUser(userData);
@@ -58,7 +58,6 @@ export default function OrdersPage() {
 
         setUser(userData);
         
-        // Carregar pedidos
         await fetchOrders();
       } catch (error: any) {
         console.error("Erro ao verificar autenticação:", error);
@@ -80,7 +79,7 @@ export default function OrdersPage() {
 
     if (searchTerm) {
       result = result.filter((order) =>
-        order.id.toString().includes(searchTerm)
+        String(order.id).toLowerCase().includes(searchTerm.toLowerCase()) 
       );
     }
 
@@ -100,38 +99,80 @@ export default function OrdersPage() {
   // Função para buscar pedidos da API
   const fetchOrders = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = authService.getToken(); 
 
       if (!token) {
         router.push("/auth");
         return;
       }
 
-      const response = await fetch("/api/orders", {
+      console.log("[ORDERS PAGE]  Buscando pedidos do FastAPI...");
+      console.log("[ORDERS PAGE]  URL:", `${API_URL}/orders`);
+
+      const response = await fetch(`${API_URL}/orders`, { 
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
+      console.log("[ORDERS PAGE]  Status:", response.status);
+
       if (response.status === 401) {
-        localStorage.removeItem("token");
+        authService.logout(); 
         router.push("/auth");
         return;
       }
 
-      const data = await response.json();
-
       if (!response.ok) {
-        throw new Error(data.detail || "Erro ao buscar pedidos");
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || "Erro ao buscar pedidos");
+      }
+     
+      const data = await response.json();
+      console.log("[ORDERS PAGE]  Pedidos recebidos:", data);
+
+      let ordersList: any[] = [];
+      
+      if (Array.isArray(data)) {
+        ordersList = data;
+      } else if (data.orders && Array.isArray(data.orders)) {
+        ordersList = data.orders;
       }
 
-      if (Array.isArray(data)) {
-        setOrders(data);
-      } else {
-        setOrders([]);
-      }
+      console.log("[ORDERS PAGE]  Total de pedidos:", ordersList.length);
+
+      console.log("[ORDERS PAGE]  Verificando IDs dos pedidos:");
+      ordersList.forEach((order: any, index: number) => {
+        console.log(`  Pedido ${index}:`, {
+          _id: order._id,
+          id: order.id,
+          status: order.status,
+          total: order.total_amount || order.total
+        });
+      });
+
+      const mappedOrders = ordersList.map((order: any, index: number) => {
+        //  GERAR ID ÚNICO BASEADO NO ÍNDICE + TIMESTAMP
+        const uniqueId = order._id || order.id || `temp-${Date.now()}-${index}`;
+        
+        return {
+          id: String(uniqueId),
+          user_id: order.user_id,
+          status: order.status,
+          total: order.total_amount || order.total,
+          created_at: order.created_at,
+          items: order.items || [],
+          payment_status: order.payment_status,
+          payment_method: order.payment_method,
+        };
+      });
+
+      console.log("[ORDERS PAGE]  Pedidos mapeados:", mappedOrders.length);
+      console.log("[ORDERS PAGE]  IDs dos pedidos:", mappedOrders.map(o => o.id)); 
+
+      setOrders(mappedOrders);
     } catch (err: any) {
-      console.error(" Erro ao buscar pedidos:", err);
+      console.error("[ORDERS PAGE]  Erro ao buscar pedidos:", err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -476,12 +517,12 @@ export default function OrdersPage() {
                       <tbody className="divide-y divide-white/10">
                         {filteredOrders.map((order) => (
                           <tr
-                            key={order.id}
+                            key={String(order.id)} 
                             className="hover:bg-white/5 transition-colors"
                           >
                             <td className="px-6 py-4 whitespace-nowrap">
                               <span className="text-sm font-semibold text-white">
-                                #{order.id}
+                                #{String(order.id).slice(-8)} 
                               </span>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -528,7 +569,7 @@ export default function OrdersPage() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h2 className="text-2xl font-bold text-white mb-1">
-                      Pedido #{selectedOrder.id}
+                      Pedido #{String(selectedOrder.id).slice(-8)} 
                     </h2>
                     <p className="text-white/70">
                       {new Date(selectedOrder.created_at).toLocaleDateString("pt-BR")}

@@ -103,16 +103,29 @@ export default function AdminPromocoesPage() {
     buy_quantity: 2, 
     pay_quantity: 1, 
   });
-
+  // VERIFICAÇÃO DE ADMIN NO LOAD
   useEffect(() => {
     const init = async () => {
       try {
-        const profile = await authService.getProfile();
+        let profile;
+        try {
+          profile = await authService.getProfile();
+        } catch (profileError) {
+          console.error(" Erro ao buscar perfil:", profileError);
+          // Tentar obter do localStorage como fallback
+          const userStr = localStorage.getItem("user");
+          if (userStr) {
+            profile = JSON.parse(userStr);
+            console.log(" Usando perfil do localStorage:", profile);
+          }
+        }
+
         if (!profile?.is_admin) {
           toast.error("Acesso negado! Apenas administradores.");
           router.push("/dashboard");
           return;
         }
+        
         loadPromotions();
       } catch (error) {
         console.error("Erro ao verificar admin:", error);
@@ -153,7 +166,7 @@ export default function AdminPromocoesPage() {
       setLoading(false);
     }
   };
-
+  // FUNÇÃO PARA DETERMINAR O STATUS DA PROMOÇÃO
   const filterPromotions = () => {
     if (!Array.isArray(promotions)) {
       setFilteredPromotions([]);
@@ -162,7 +175,6 @@ export default function AdminPromocoesPage() {
 
     let filtered = [...promotions];
 
-    // Filtro por status
     if (filterStatus !== "all") {
       filtered = filtered.filter((promo) => {
         const status = getPromotionStatus(promo);
@@ -170,7 +182,6 @@ export default function AdminPromocoesPage() {
       });
     }
 
-    // Filtro por busca
     if (searchTerm) {
       filtered = filtered.filter(
         (promo) =>
@@ -182,7 +193,7 @@ export default function AdminPromocoesPage() {
 
     setFilteredPromotions(filtered);
   };
-
+  // FUNÇÃO PARA OBTER O STATUS DA PROMOÇÃO
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -373,9 +384,8 @@ export default function AdminPromocoesPage() {
     scheduled: Array.isArray(promotions) ? promotions.filter((p) => getPromotionStatus(p) === "scheduled").length : 0,
     expired: Array.isArray(promotions) ? promotions.filter((p) => getPromotionStatus(p) === "expired").length : 0,
   };
-
+  // FUNÇÃO DE VALIDAÇÃO DO FORMULÁRIO
   const validateForm = (): string | null => {
-    // Validações gerais
     if (!formData.name || formData.name.length < 3) {
       return "Nome deve ter no mínimo 3 caracteres";
     }
@@ -391,8 +401,7 @@ export default function AdminPromocoesPage() {
     if (new Date(formData.end_date) <= new Date(formData.start_date)) {
       return "Data de término deve ser maior que data de início";
     }
-
-    // Validações específicas por tipo
+    // Validações específicas por tipo de promoção
     switch (formData.type) {
       case "percentage_discount":
         if (!formData.discount_percentage || formData.discount_percentage <= 0) {
@@ -1038,7 +1047,6 @@ export default function AdminPromocoesPage() {
                   )}
                 </div>
 
-                {/* Outras Configurações */}
                 <div className="space-y-4">
                   <h4 className="font-semibold text-lg border-b border-white/20 pb-2 text-white">
                     Outras Configurações

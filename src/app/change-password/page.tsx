@@ -22,11 +22,9 @@ export default function ChangePasswordPage() {
     newPassword: "",
     confirmPassword: "",
   });
-
+  // Manipulação do envio do formulário
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validações
     if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
       toast.error("Preencha todos os campos!");
       return;
@@ -48,8 +46,6 @@ export default function ChangePasswordPage() {
     }
 
     setLoading(true);
-
-    // Simular chamada à API
     try {
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
@@ -217,7 +213,7 @@ export default function ChangePasswordPage() {
         {/* Dicas de Segurança */}
         <div className="mt-8 bg-blue-500/10 backdrop-blur-sm rounded-2xl p-6 border border-blue-400/20">
           <h3 className="text-blue-300 font-bold text-lg mb-3">
-            💡 Dicas para uma senha segura:
+             Dicas para uma senha segura:
           </h3>
           <ul className="text-white/80 space-y-2 text-sm">
             <li>✓ Use pelo menos 8 caracteres</li>

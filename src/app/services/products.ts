@@ -1,4 +1,3 @@
-// ✅ DEFINIR API_URL localmente
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 interface Product {
@@ -23,7 +22,6 @@ interface ProductsResponse {
 }
 
 export const productsService = {
-  // GET /products
   async getProducts(params?: {
     skip?: number;
     limit?: number;

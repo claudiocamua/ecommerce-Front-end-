@@ -131,7 +131,6 @@ export default function ComingSoon() {
                   transition-all
                 "
               >
-                {/* GRADIENTE ANIMADO */}
                 <div
                   className={`
                     absolute

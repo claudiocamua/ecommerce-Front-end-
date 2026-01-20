@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ordersService, Order } from "@/app/services/orders";
+import { authStorage } from "@/lib/auth"; 
 import { authService } from "@/app/services/auth";
 import { toast } from "react-hot-toast";
 import { getPaymentMethodDisplay, PaymentMethodKey } from "@/app/utils/paymentMethods";
@@ -41,19 +42,26 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
-
+  // Verifica se o usuário é admin
   useEffect(() => {
     const init = async () => {
       try {
-        if (!authService.isAuthenticated()) {
+        let user = authStorage.getUser();
+        if (!user) {
+          try {
+            user = await authService.getProfile();
+          } catch (profileError) {
+            console.error(" Erro ao buscar perfil:", profileError);
+          }
+        }
+
+        if (!user) {
           toast.error("Faça login para acessar esta página");
-          router.push("/auth");
+          router.push("/");
           return;
         }
 
-        const profile = await authService.getProfile();
-        
-        if (!profile?.is_admin) {
+        if (!user.is_admin) {
           toast.error("Acesso negado! Apenas administradores.");
           router.push("/dashboard");
           return;
@@ -75,7 +83,7 @@ export default function AdminOrdersPage() {
   useEffect(() => {
     filterOrders();
   }, [orders, searchTerm, statusFilter]);
-
+  // Carrega todos os pedidos
   const loadOrders = async () => {
     try {
       setLoading(true);
@@ -97,7 +105,7 @@ export default function AdminOrdersPage() {
       setLoading(false);
     }
   };
-
+  // Filtra os pedidos com base no status e termo de busca
   const filterOrders = () => {
     let filtered = [...orders];
 
@@ -118,7 +126,7 @@ export default function AdminOrdersPage() {
 
     setFilteredOrders(filtered);
   };
-
+  // Abre o modal de edição
   const handleOpenEditModal = (order: Order) => {
     setSelectedOrder(order);
     setEditOrderStatus(order.status);
@@ -126,7 +134,7 @@ export default function AdminOrdersPage() {
     setEditPaymentMethod(order.payment_method);
     setShowEditModal(true);
   };
-
+  // Atualiza o pedido
   const handleUpdateOrder = async () => {
     if (!selectedOrder) return;
 
@@ -158,7 +166,7 @@ export default function AdminOrdersPage() {
       toast.error(error?.response?.data?.detail || "Erro ao atualizar pedido");
     }
   };
-
+  // Confirma o pagamento do pedido
   const handleConfirmPayment = async (orderId: string) => {
     try {
       await ordersService.confirmPayment(orderId);
@@ -168,7 +176,7 @@ export default function AdminOrdersPage() {
       toast.error(error?.response?.data?.detail || "Erro ao confirmar pagamento");
     }
   };
-
+  // Marca o pedido como enviado
   const handleMarkAsShipped = async (orderId: string) => {
     try {
       await ordersService.markAsShipped(orderId, trackingCode);
@@ -180,7 +188,8 @@ export default function AdminOrdersPage() {
       toast.error(error?.response?.data?.detail || "Erro ao marcar como enviado");
     }
   };
-
+  
+  // Marca o pedido como entregue
   const handleMarkAsDelivered = async (orderId: string) => {
     try {
       await ordersService.markAsDelivered(orderId);
@@ -190,7 +199,7 @@ export default function AdminOrdersPage() {
       toast.error(error?.response?.data?.detail || "Erro ao marcar como entregue");
     }
   };
-
+  // Cancela o pedido
   const handleCancelOrder = async (orderId: string) => {
     const reason = prompt("Motivo do cancelamento:");
     if (!reason) return;
@@ -203,7 +212,8 @@ export default function AdminOrdersPage() {
       toast.error(error?.response?.data?.detail || "Erro ao cancelar pedido");
     }
   };
-
+  
+  // Gera o badge de status do pedido
   const getStatusBadge = (status: string) => {
     const configs: Record<string, { label: string; color: string; icon: any }> = {
       pending: {
@@ -272,7 +282,6 @@ export default function AdminOrdersPage() {
       </span>
     );
   };
-
   const formatDate = (dateString: string) => {
     if (!dateString) return "Data inválida";
     try {

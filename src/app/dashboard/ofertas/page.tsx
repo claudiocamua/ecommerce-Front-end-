@@ -76,9 +76,7 @@ interface Promotion {
   }>;
   min_order_value?: number;
 }
-// Imagem de fundo para a página de ofertas
 const OFERTAS_BACKGROUND = "https://images.unsplash.com/photo-1607082348824-0a96f2a4b9da?w=1920&q=80";
-// Mapeamentos para tipos de promoção
 const promotionTypeIcons: Record<PromotionType, any> = {
   percentage_discount: TagIcon,
   buy_x_pay_y: GiftIcon,

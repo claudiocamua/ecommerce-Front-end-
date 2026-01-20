@@ -11,6 +11,8 @@ interface CartItem {
   price: number;
   quantity: number;
   image?: string;
+  discount_percentage?: number;  // ADICIONAR
+  discount?: number;              // ADICIONAR
 }
 
 interface CartContextData {
@@ -34,23 +36,36 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     loadCart();
   }, []);
-
+ 
   async function loadCart() {
     try {
       setLoading(true);
       const data = await cartService.getCart();
 
-      console.log("📦 Dados do carrinho recebidos:", data);
+      console.log(" Dados do carrinho recebidos:", data);
 
-      //CONVERTER FORMATO DO BACKEND PARA CONTEXTO
-      const items = data.items.map((item: any) => ({
-        id: item.product_id,
-        product_id: item.product_id,
-        name: item.product_name,
-        price: item.product_price,
-        quantity: item.quantity,
-        image: item.product_image,
-      }));
+      if (data.items && data.items.length > 0) {
+        console.log("🔍 Primeiro item do backend:", data.items[0]);
+      }
+
+      const items = data.items.map((item: any) => {
+        const product = item.product || {}; 
+        
+        const mappedItem = {
+          id: item.product_id || item.id,
+          product_id: item.product_id || item.id,
+          name: product.name || product.title || item.product_name,
+          price: product.price || product.unit_price || item.product_price || 0,
+          quantity: item.quantity || 1,
+          image: product.image || product.picture_url || item.product_image,
+          // ADICIONAR DESCONTOS
+          discount_percentage: product.discount_percentage ?? item.discount_percentage,
+          discount: product.discount ?? item.discount,
+        };
+        
+        console.log(" Item mapeado com desconto:", mappedItem);
+        return mappedItem;
+      });
 
       console.log(" Carrinho convertido para contexto:", items);
       setCart(items);
@@ -64,10 +79,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   async function addToCart(product: CartItem) {
     try {
-      await cartService.addToCart({
-        product_id: product.product_id || product.id,
-        quantity: product.quantity || 1,
-      });
+      await cartService.addToCart(
+        product.product_id || product.id,
+        product.quantity || 1
+      );
 
       await loadCart();
       toast.success("Produto adicionado ao carrinho!");
@@ -99,7 +114,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }
 
   function getTotalPrice(): number {
-    return cart.reduce((total, item) => total + item.price * item.quantity, 0);
+    // CALCULAR COM DESCONTO
+    return cart.reduce((total, item) => {
+      const discount = item.discount_percentage || item.discount || 0;
+      const finalPrice = discount > 0 
+        ? item.price * (1 - discount / 100) 
+        : item.price;
+      return total + (finalPrice * item.quantity);
+    }, 0);
   }
 
   function getTotalItems(): number {

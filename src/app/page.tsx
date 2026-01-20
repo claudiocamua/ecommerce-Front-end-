@@ -1,18 +1,69 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { toast } from "react-hot-toast";
+import { authService } from "@/app/services/auth";
 import Navbar from "./components/layout/navbar";
 import HeroSection from "./components/layout/HeroSection";
-import { useState } from "react";
 import ModalAuth from "./components/auth/ModalAuth";
 import Footer from "./components/layout/Footer";
 
 export default function Home() {
+  const searchParams = useSearchParams();
+  const [processandoToken, setProcessandoToken] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [authType, setAuthType] = useState<"login" | "register">("login");
 
   function openAuthModal(type: "login" | "register") {
     setAuthType(type);
     setAuthOpen(true);
+  }
+
+  //  Processar token do Google OAuth
+  useEffect(() => {
+    const token = searchParams.get("token");
+
+    if (token && !processandoToken) {
+      setProcessandoToken(true);
+      console.log(" Token recebido do Google OAuth");
+
+      // Salvar token (igual ao login com email/senha)
+      authService.saveToken(token);
+
+      // Buscar dados do usuário
+      authService
+        .getProfile()
+        .then((user) => {
+          console.log(" Perfil do usuário obtido:", user);
+          authService.saveUser(user);
+
+          toast.success("Login realizado com sucesso! Redirecionando...");
+
+          setTimeout(() => {
+            window.location.href = "/dashboard";
+          }, 1000);
+        })
+        .catch((error) => {
+          console.error(" Erro ao buscar perfil:", error);
+          toast.error("Erro ao carregar dados do usuário");
+          setProcessandoToken(false);
+        });
+    }
+  }, [searchParams, processandoToken]);
+
+  if (processandoToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-black">
+        <div className="text-center text-white">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <h1 className="text-2xl font-bold mb-2">Processando login...</h1>
+          <p className="text-white/60">
+            Aguarde enquanto validamos suas credenciais
+          </p>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -25,7 +76,7 @@ export default function Home() {
 
       <div className="relative z-10 flex-1 overflow-y-auto">
         <Navbar setAuthOpen={setAuthOpen} setAuthType={setAuthType} />
-        
+
         <div className="flex-1 overflow-y-auto">
           <HeroSection openAuthModal={openAuthModal} />
 
@@ -123,7 +174,7 @@ export default function Home() {
               <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-12">
                 O que nossos clientes dizem
               </h2>
-              
+
               <div className="max-w-3xl mx-auto">
                 <div className="flex justify-center gap-2 mb-6">
                   {[...Array(5)].map((_, i) => (
@@ -168,7 +219,9 @@ export default function Home() {
                     />
                   </div>
                   <div className="text-center">
-                    <h3 className="font-semibold text-white text-lg mb-1">WhatsApp</h3>
+                    <h3 className="font-semibold text-white text-lg mb-1">
+                      WhatsApp
+                    </h3>
                     <p className="text-sm text-white/80">
                       Escaneie para falar conosco
                     </p>
@@ -191,7 +244,9 @@ export default function Home() {
                     </svg>
                   </a>
                   <div className="text-center">
-                    <h3 className="font-semibold text-white text-lg mb-1">Instagram</h3>
+                    <h3 className="font-semibold text-white text-lg mb-1">
+                      Instagram
+                    </h3>
                     <p className="text-sm text-white/80">@seuusuario</p>
                   </div>
                 </div>

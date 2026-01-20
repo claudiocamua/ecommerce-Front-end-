@@ -1,4 +1,4 @@
-import api from './api';
+import api from '@/lib/axios';
 
 export interface Order {
   _id?: string;
@@ -46,31 +46,15 @@ const normalizeOrder = (order: any): Order => {
     _id: id,
   };
 };
-// Serviço de Pedidos
-class OrdersService {
+
+export const ordersService = {
   async getAllOrders(): Promise<Order[]> {
-    try {
-      console.log(' Buscando todos os pedidos (admin)...');
-      const response = await api.get('/orders/admin/all');
-      
-      console.log(' Resposta bruta da API:', response.data);
-      
-      const normalizedOrders = response.data.map((order: any) => {
-        const normalized = normalizeOrder(order);
-        console.log(` id: ${normalized.id}`);
-        return normalized;
-      });
-      
-      console.log(' Pedidos normalizados:', normalizedOrders);
-      console.log(' Exemplo de ID:', normalizedOrders[0]?.id);
-      
-      return normalizedOrders;
-    } catch (error: any) {
-      console.error(' Erro ao buscar pedidos:', error);
-      throw error;
-    }
-  }
-  // Buscar pedido por ID
+    console.log(' [ORDERS] Buscando todos os pedidos...');
+    const response = await api.get('/orders/admin/all');
+    console.log(' [ORDERS] Pedidos recebidos:', response.data.length);
+    return response.data;
+  },
+
   async getOrder(orderId: string): Promise<Order> {
     try {
       console.log(' Buscando pedido:', orderId);
@@ -80,8 +64,8 @@ class OrdersService {
       console.error(' Erro ao buscar pedido:', error);
       throw error;
     }
-  }
-  // Criar novo pedido
+  },
+
   async createOrder(orderData: any): Promise<Order> {
     try {
       console.log(' Criando pedido:', orderData);
@@ -91,7 +75,7 @@ class OrdersService {
       console.error(' Erro ao criar pedido:', error);
       throw error;
     }
-  }
+  },
 
   async updateOrder(orderId: string, updateData: any): Promise<Order> {
     try {
@@ -107,7 +91,7 @@ class OrdersService {
       console.error(' Erro ao atualizar pedido:', error);
       throw error;
     }
-  }
+  },
 
   async confirmPayment(orderId: string): Promise<any> {
     try {
@@ -124,7 +108,7 @@ class OrdersService {
       console.error(' Erro ao confirmar pagamento:', error);
       throw error;
     }
-  }
+  },
 
   async markAsShipped(orderId: string, trackingCode?: string): Promise<any> {
     try {
@@ -141,7 +125,7 @@ class OrdersService {
       console.error(' Erro ao marcar como enviado:', error);
       throw error;
     }
-  }
+  },
 
   async markAsDelivered(orderId: string): Promise<any> {
     try {
@@ -157,7 +141,7 @@ class OrdersService {
       console.error(' Erro ao marcar como entregue:', error);
       throw error;
     }
-  }
+  }, 
 
   async adminCancelOrder(orderId: string, reason?: string): Promise<any> {
     try {
@@ -174,7 +158,7 @@ class OrdersService {
       console.error(' Erro ao cancelar pedido:', error);
       throw error;
     }
-  }
+  }, 
 
   async getUserOrders(): Promise<Order[]> {
     try {
@@ -186,6 +170,4 @@ class OrdersService {
       throw error;
     }
   }
-}
-
-export const ordersService = new OrdersService();
+};

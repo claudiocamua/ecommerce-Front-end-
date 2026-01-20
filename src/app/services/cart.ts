@@ -14,11 +14,9 @@ export interface CartItem {
 }
 
 export interface Cart {
-  user_id: string;
   items: CartItem[];
   total: number;
 }
-// Serviço para gerenciar o carrinho de compras
 export const cartService = {
   async addToCart(productId: string, quantity: number = 1) {
     if (!authService.isAuthenticated()) {

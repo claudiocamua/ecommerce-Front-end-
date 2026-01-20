@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import Link from "next/link";
 import { CheckCircleIcon, XCircleIcon } from "@heroicons/react/24/outline";
-
+// Componente principal para verificar o email
 function VerifyEmailContent() {
   const router = useRouter();
   const searchParams = useSearchParams();

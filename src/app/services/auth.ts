@@ -1,140 +1,102 @@
 import api from "./api";
-import { useAuthStore } from "@/store/useAuthStore";
 
-export interface LoginData {
+interface LoginCredentials {
   email: string;
   password: string;
 }
 
-export interface RegisterData {
-  email: string;
-  password: string;
-  full_name: string;
+interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  user?: any;
 }
 
-export interface User {
-  _id: string;
-  email: string;
-  full_name: string;
-  is_active: boolean;
-  is_verified: boolean;
-  is_admin?: boolean;
-  created_at: string;
-}
-
-class AuthService {
-  async login(data: LoginData) {
-    const response = await api.post("/auth/login", data);
-    // Salvando token e usuário no localStorage e Zustand
+export const authService = {
+  async login(email: string, password: string) {
+    const response = await api.post("/auth/login", { email, password });
     const { access_token, user } = response.data;
-    
-    if (typeof window !== "undefined") {
-      localStorage.setItem("token", access_token);
-      localStorage.setItem("user", JSON.stringify(user));
-    }
-    
-    if (user) {
-      useAuthStore.getState().setAuth(user, access_token);
-    } else {
-      const userProfile = await this.getProfile(access_token);
-      useAuthStore.getState().setAuth(userProfile, access_token);
-    }
-    
-    return response.data;
-  }
 
-  async register(data: RegisterData) {
-    const response = await api.post("/auth/register", data);
-    return response.data;
-  }
+    const userData = {
+      ...user,
+      is_admin: user.is_admin === true || user.is_admin === "true",
+    };
 
-  async getProfile(token?: string): Promise<User> {
-    const authToken = token || useAuthStore.getState().token;
-    
-    const response = await api.get("/auth/me", {
-      headers: {
-        Authorization: `Bearer ${authToken}`
-      }
-    });
-    
+    console.log(" [LOGIN] User do backend:", user);
+    console.log(" [LOGIN] is_admin original:", user.is_admin);
+    console.log(" [LOGIN] User convertido:", userData);
+
+    localStorage.setItem("access_token", access_token);
+    localStorage.setItem("user", JSON.stringify(userData));
+
+    return { access_token, user: userData };
+  },
+
+  async getProfile() {
+    const response = await api.get("/auth/me");
     return response.data;
-  }
+  },
 
   saveToken(token: string) {
     if (typeof window !== "undefined") {
-      localStorage.setItem("token", token);
+      localStorage.setItem("access_token", token); 
     }
-    useAuthStore.getState().setAuth(useAuthStore.getState().user, token);
-  }
+  },
 
-  saveUser(user: User) {
+  getToken() {
     if (typeof window !== "undefined") {
-      localStorage.setItem("user", JSON.stringify(user));
-    }
-    useAuthStore.getState().setUser(user);
-  }
-
-  getToken(): string | null {
-    const zustandToken = useAuthStore.getState().token;
-    if (zustandToken) return zustandToken;
-
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("token");
+      return localStorage.getItem("access_token"); 
     }
     return null;
-  }
-// Retorna o usuário autenticado ou null se não estiver autenticado
-  getUser(): User | null {
-    const zustandUser = useAuthStore.getState().user;
-    if (zustandUser) return zustandUser;
+  },
 
+  saveUser(user: any) {
     if (typeof window !== "undefined") {
-      const userStr = localStorage.getItem("user");
-      if (userStr) {
-        try {
-          return JSON.parse(userStr);
-        } catch {
-          return null;
-        }
-      }
+      const userData = {
+        ...user,
+        is_admin: user.is_admin === true || user.is_admin === "true",
+      };
+      localStorage.setItem("user", JSON.stringify(userData));
     }
-    return null;
-  }
+  },
 
-  isAuthenticated(): boolean {
-    return !!this.getToken();
-  }
+  getUser() {
+    if (typeof window === "undefined") return null;
+
+    const userStr = localStorage.getItem("user");
+    if (!userStr) return null;
+
+    try {
+      const user = JSON.parse(userStr);
+
+      //CONVERTER is_admin PARA BOOLEAN VERDADEIRO
+      const isAdmin = user.is_admin === true || user.is_admin === "true";
+
+      console.log("🔍 [AUTH SERVICE] User do localStorage:", user);
+      console.log("🔍 [AUTH SERVICE] is_admin ORIGINAL:", user.is_admin);
+      console.log("🔍 [AUTH SERVICE] Tipo ORIGINAL:", typeof user.is_admin);
+      console.log("🔍 [AUTH SERVICE] isAdmin CONVERTIDO:", isAdmin);
+
+      return {
+        ...user,
+        is_admin: isAdmin, 
+      };
+    } catch (error) {
+      console.error(" Erro ao parsear usuário:", error);
+      return null;
+    }
+  },
 
   logout() {
     if (typeof window !== "undefined") {
-      localStorage.removeItem("token");
+      localStorage.removeItem("access_token");
       localStorage.removeItem("user");
+      window.location.href = "/";
     }
-    useAuthStore.getState().logout();
-  }
-  // Login com Google
-  async loginWithGoogle(googleToken: string) {
-    try {
-      const response = await api.post("/auth/google", { token: googleToken });
-      const { user, access_token } = response.data;
-      
-      if (typeof window !== "undefined") {
-        localStorage.setItem("token", access_token);
-        localStorage.setItem("user", JSON.stringify(user));
-      }
-      
-      useAuthStore.getState().setAuth(user, access_token);
-      
-      if (typeof window !== "undefined") {
-        window.location.href = "/dashboard";
-      }
-      
-      return { user, token: access_token };
-    } catch (error) {
-      console.error(" Erro no login com Google:", error);
-      throw error;
-    }
-  }
-}
+  },
 
-export const authService = new AuthService();
+  isAuthenticated() {
+    const token = this.getToken();
+    console.log(" [AUTH] isAuthenticated - Token:", !!token);
+    return !!token;
+  },
+};

@@ -38,28 +38,24 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
 
   useEffect(() => {
     setIsMounted(true);
-    
-    // ✅ REMOVIDO: Não redirecionar automaticamente - deixar a página decidir
-    // if (!user) {
-    //   router.push("/auth");
-    // }
   }, [user, router]);
 
   const handleLogout = () => {
     authService.logout();
     toast.success("Logout realizado com sucesso!");
-    router.push("/"); // Redireciona para home
+    router.push("/"); 
   };
 
-  // ✅ PROTEÇÃO DE SEGURANÇA COM VALORES PADRÃO
   const userName = user?.full_name || user?.email || "Usuário";
   const userInitial = userName.charAt(0).toUpperCase();
   const userFirstName = userName.split(" ")[0];
-
-  // ✅ VERIFICAR SE É ADMIN - DEVE SER ESTRITAMENTE true
   const isAdmin = user?.is_admin === true;
 
-  // ✅ RENDERIZAR PLACEHOLDER APENAS SE NÃO MONTADO
+  console.log("🔍 [NAVBAR] Dados completos do user:", user);
+  console.log("🔍 [NAVBAR] user.is_admin:", user?.is_admin);
+  console.log("🔍 [NAVBAR] Tipo de is_admin:", typeof user?.is_admin);
+  console.log("🔍 [NAVBAR] isAdmin calculado:", isAdmin);
+
   if (!isMounted) {
     return (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-cartao border-b border-borda shadow-md">
@@ -73,7 +69,6 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
     );
   }
 
-  // ✅ SE NÃO TIVER USER, RENDERIZAR NAVBAR SIMPLES
   if (!user) {
     return (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-cartao border-b border-borda shadow-md">
@@ -119,11 +114,11 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                 <Package size={20} /> Pedidos
               </Link>
               
-              {/* ✅ Botão Admin só aparece se isAdmin === true */}
               {isAdmin && (
                 <Link 
                   href="/admin" 
                   className="nav-link flex items-center gap-2 text-yellow-400 hover:text-yellow-500 font-bold"
+                  onClick={() => console.log(" Clicou em Admin - isAdmin:", isAdmin)}
                 >
                   <Shield size={20} /> Admin
                 </Link>
@@ -186,7 +181,10 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                       <Link
                         href="/admin"
                         className="dropdown-item flex items-center gap-2 text-yellow-600 border-t border-borda"
-                        onClick={() => setIsProfileOpen(false)}
+                        onClick={() => {
+                          setIsProfileOpen(false);
+                          console.log(" Clicou em Admin (dropdown) - isAdmin:", isAdmin);
+                        }}
                       >
                         <Shield size={16} /> Administração
                       </Link>

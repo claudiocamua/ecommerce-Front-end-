@@ -168,7 +168,6 @@ export default function ProductsPage() {
     if (!user) {
       toast.error("Faça login ou cadastre-se para ver os detalhes do produto!", {
         duration: 4000,
-        icon: "🔒",
       });
       window.dispatchEvent(new CustomEvent('openAuthModal', { detail: 'login' }));
       return;
@@ -241,7 +240,7 @@ export default function ProductsPage() {
             {activeSearch && (
               <div className="text-center">
                 <p className="text-gray-900 bg-yellow-400/90 px-6 py-3 rounded-full inline-block font-semibold shadow-lg">
-                  🔍 Buscando por: "{activeSearch}"
+                   Buscando por: "{activeSearch}"
                 </p>
               </div>
             )}
