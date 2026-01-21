@@ -74,11 +74,11 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-cartao border-b border-borda shadow-md">
         <div className="container-custom">
           <div className="flex justify-between items-center h-16">
-            <Link href="/" className="text-2xl font-bold text-primario">
+            <Link href="/" className="text-2xl font-bold text-primario" prefetch={false}>
               MinhaLoja.
             </Link>
             <div className="flex gap-4">
-              <Link href="/" className="px-4 py-2 text-sm font-medium text-texto hover:text-primario">
+              <Link href="/" className="px-4 py-2 text-sm font-medium text-texto hover:text-primario" prefetch={false}>
                 Entrar
               </Link>
             </div>
@@ -93,7 +93,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-cartao border-b border-borda shadow-md">
         <div className="container-custom">
           <div className="flex justify-between items-center h-16">
-            <Link href="/dashboard" className="flex items-center gap-2">
+            <Link href="/dashboard" className="flex items-center gap-2" prefetch={false}>
               <span className="text-2xl font-bold text-primario">
                 MinhaLoja.
               </span>
@@ -101,16 +101,16 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
             <WelcomeHeader userName={userName} />
 
             <div className="hidden md:flex items-center gap-6">
-              <Link href="/profile" className="nav-link flex items-center gap-2">
+              <Link href="/profile" className="nav-link flex items-center gap-2" prefetch={false}>
                 <User size={20} /> Meu Perfil
               </Link>
-              <Link href="/dashboard/products" className="nav-link flex items-center gap-2">
+              <Link href="/dashboard/products" className="nav-link flex items-center gap-2" prefetch={false}>
                 <ShoppingBag size={20} /> Produtos
               </Link>
-              <Link href="/cart" className="nav-link flex items-center gap-2">
+              <Link href="/cart" className="nav-link flex items-center gap-2" prefetch={false}>
                 <ShoppingCart size={20} /> Carrinho
               </Link>
-              <Link href="/dashboard/orders" className="nav-link flex items-center gap-2">
+              <Link href="/dashboard/orders" className="nav-link flex items-center gap-2" prefetch={false}>
                 <Package size={20} /> Pedidos
               </Link>
               
@@ -118,6 +118,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                 <Link 
                   href="/admin" 
                   className="nav-link flex items-center gap-2 text-yellow-400 hover:text-yellow-500 font-bold"
+                  prefetch={false}
                   onClick={() => console.log(" Clicou em Admin - isAdmin:", isAdmin)}
                 >
                   <Shield size={20} /> Admin
@@ -164,6 +165,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                     <Link
                       href="/profile"
                       className="dropdown-item flex items-center gap-2"
+                      prefetch={false}
                       onClick={() => setIsProfileOpen(false)}
                     >
                       <User size={16} /> Meu Perfil
@@ -172,6 +174,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                     <Link
                       href="/dashboard/orders"
                       className="dropdown-item flex items-center gap-2"
+                      prefetch={false}
                       onClick={() => setIsProfileOpen(false)}
                     >
                       <Package size={16} /> Meus Pedidos
@@ -181,6 +184,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                       <Link
                         href="/admin"
                         className="dropdown-item flex items-center gap-2 text-yellow-600 border-t border-borda"
+                        prefetch={false}
                         onClick={() => {
                           setIsProfileOpen(false);
                           console.log(" Clicou em Admin (dropdown) - isAdmin:", isAdmin);
@@ -215,16 +219,16 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="fixed inset-0 bg-black/50" onClick={() => setIsMenuOpen(false)} />
           <div className="fixed top-16 right-0 left-0 bg-cartao border-b border-borda shadow-lg p-6 flex flex-col gap-4">
-            <Link href="/dashboard/products" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+            <Link href="/dashboard/products" className="mobile-link flex items-center gap-2" prefetch={false} onClick={() => setIsMenuOpen(false)}>
               <ShoppingBag size={20} /> Produtos
             </Link>
-            <Link href="/cart" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+            <Link href="/cart" className="mobile-link flex items-center gap-2" prefetch={false} onClick={() => setIsMenuOpen(false)}>
               <ShoppingCart size={20} /> Carrinho
             </Link>
-            <Link href="/dashboard/orders" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+            <Link href="/dashboard/orders" className="mobile-link flex items-center gap-2" prefetch={false} onClick={() => setIsMenuOpen(false)}>
               <Package size={20} /> Pedidos
             </Link>
-            <Link href="/profile" className="mobile-link flex items-center gap-2" onClick={() => setIsMenuOpen(false)}>
+            <Link href="/profile" className="mobile-link flex items-center gap-2" prefetch={false} onClick={() => setIsMenuOpen(false)}>
               <User size={20} /> Meu Perfil
             </Link>
             
@@ -232,6 +236,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
               <Link
                 href="/admin"
                 className="mobile-link flex items-center gap-2 text-yellow-500 font-bold border-t border-borda pt-4"
+                prefetch={false}
                 onClick={() => setIsMenuOpen(false)}
               >
                 <Shield size={20} /> Administração

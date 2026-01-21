@@ -5,25 +5,32 @@ const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:800
 export async function GET(request: NextRequest) {
   try {
     const token = request.headers.get("Authorization");
-    console.log(" Proxy GET /orders");
-    console.log(" Backend URL:", BACKEND_URL);
-
+    
+    const isProduction = process.env.NODE_ENV === 'production';
+    const shouldLog = !isProduction || !!token;
+    
+    if (shouldLog) {
+      console.log(" [API/ORDERS] GET - Buscando pedidos do backend");
+      console.log(" [API/ORDERS] Backend URL:", BACKEND_URL);
+      console.log(" [API/ORDERS] Token presente:", !!token);
+    }
+    
     const response = await fetch(`${BACKEND_URL}/orders`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
         ...(token && { Authorization: token }),
       },
+      cache: 'no-store',
     });
 
-    console.log(" Proxy: Status da resposta:", response.status);
+    console.log(" [API/ORDERS] Status:", response.status);
 
     const contentType = response.headers.get("content-type");
-    console.log(" Content-Type:", contentType);
-
+    
     if (!contentType || !contentType.includes("application/json")) {
       const text = await response.text();
-      console.error(" Resposta não é JSON:", text);
+      console.error(" [API/ORDERS] Resposta não é JSON:", text);
       
       return NextResponse.json(
         { 
@@ -35,11 +42,11 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log(" Proxy: Dados recebidos do backend:", data);
+    console.log(" [API/ORDERS] Pedidos recebidos:", data);
 
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
-    console.error(" Proxy: Erro ao buscar pedidos:", error.message);
+    console.error(" [API/ORDERS] Erro ao buscar pedidos:", error.message);
     
     return NextResponse.json(
       { 
@@ -56,9 +63,8 @@ export async function POST(request: NextRequest) {
     const token = request.headers.get("Authorization");
     const body = await request.json();
     
-    console.log(" Proxy: Recebendo requisição para criar pedido");
-    console.log(" Proxy: Body recebido:", body);
-    console.log(" Proxy: Enviando para:", `${BACKEND_URL}/orders`);
+    console.log(" [API/ORDERS] POST - Criando pedido");
+    console.log(" [API/ORDERS] Body:", body);
 
     const response = await fetch(`${BACKEND_URL}/orders`, {
       method: "POST",
@@ -69,13 +75,13 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify(body),
     });
 
-    console.log(" Proxy: Status da resposta:", response.status);
+    console.log(" [API/ORDERS] Status:", response.status);
 
     const contentType = response.headers.get("content-type");
     
     if (!contentType || !contentType.includes("application/json")) {
       const text = await response.text();
-      console.error(" Resposta não é JSON:", text);
+      console.error(" [API/ORDERS] Resposta não é JSON:", text);
       
       return NextResponse.json(
         { 
@@ -87,11 +93,11 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await response.json();
-    console.log(" Proxy: Dados recebidos do backend:", data);
+    console.log(" [API/ORDERS] Pedido criado:", data);
 
     return NextResponse.json(data, { status: response.status });
   } catch (error: any) {
-    console.error(" Proxy: Erro ao criar pedido:", error.message);
+    console.error(" [API/ORDERS] Erro ao criar pedido:", error.message);
     
     return NextResponse.json(
       { 

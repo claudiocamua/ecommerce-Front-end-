@@ -93,7 +93,6 @@ export default function AdminPage() {
                     {user.full_name || user.name || user.email}
                   </span>
                 </p>
-                {/*  BADGE DE ADMIN */}
                 <span className="inline-block mt-2 px-3 py-1 bg-yellow-400 text-gray-900 text-xs font-bold rounded-full">
                   ADMINISTRADOR ATIVO
                 </span>
@@ -109,9 +108,7 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {/* Cards de Gerenciamento */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Produtos */}
             <Link
               href="/admin/products"
               className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl p-8 hover:bg-white/20 transition-all hover:scale-105 border border-white/20 group"
@@ -129,7 +126,6 @@ export default function AdminPage() {
               </p>
             </Link>
 
-            {/* Promoções */}
             <Link
               href="/admin/promocoes"
               className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl p-8 hover:bg-white/20 transition-all hover:scale-105 border border-white/20 group"
@@ -147,7 +143,6 @@ export default function AdminPage() {
               </p>
             </Link>
 
-            {/* Pedidos */}
             <Link
               href="/admin/orders"
               className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl p-8 hover:bg-white/20 transition-all hover:scale-105 border border-white/20 group"
@@ -165,7 +160,6 @@ export default function AdminPage() {
               </p>
             </Link>
 
-            {/* Usuários/Administradores */}
             <Link
               href="/admin/usuarios"
               className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl p-8 hover:bg-white/20 transition-all hover:scale-105 border border-white/20 group"
@@ -184,7 +178,7 @@ export default function AdminPage() {
             </Link>
           </div>
 
-          {/* Informações Adicionais */}
+         
           <div className="mt-8 bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl p-6 border border-white/20">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
               <div>

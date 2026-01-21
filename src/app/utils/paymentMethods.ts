@@ -27,13 +27,6 @@ export const getPaymentMethodLabel = (key: PaymentMethodKey): string => {
 
 export const getPaymentMethodDisplay = (
   key: PaymentMethodKey
-) => {
-  const Icon = PAYMENT_ICONS[key];
-
-  return (
-    <span className="flex items-center gap-2">
-      <Icon className="w-5 h-5 text-yellow-500" />
-      {PAYMENT_METHODS[key]}
-    </span>
-  );
+): string => {
+  return PAYMENT_METHODS[key];
 };

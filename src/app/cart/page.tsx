@@ -99,12 +99,9 @@ export default function CartPage() {
       if (error.response?.status === 404) {
         console.log("[CART PAGE] Carrinho vazio (404)");
         setCart({
-          user_id: "",
           items: [],
-          total_items: 0,
-          subtotal: 0,
-          updated_at: new Date().toISOString(),
-        });
+        } as Cart);
+        return;
       } else if (error.response?.status === 401) {
         toast.error("Sessao expirada. Faca login novamente.");
         authService.logout();
@@ -160,12 +157,8 @@ export default function CartPage() {
     try {
       await cartService.clearCart();
       setCart({
-        user_id: "",
         items: [],
-        total_items: 0,
-        subtotal: 0,
-        updated_at: new Date().toISOString(),
-      });
+      } as Cart);
       toast.success("Carrinho limpo");
     } catch (error: any) {
       toast.error(error.response?.data?.detail || "Erro ao limpar carrinho");
@@ -252,8 +245,8 @@ export default function CartPage() {
                       <div className="p-6 border-b border-white/20">
                         <div className="flex justify-between items-center">
                           <h2 className="text-2xl font-semibold text-white">
-                            {getSafeNumber(cart.total_items)}{" "}
-                            {getSafeNumber(cart.total_items) === 1 ? "item" : "itens"}
+                            {cart?.items?.length || 0}{" "}
+                            {(cart?.items?.length || 0) === 1 ? "item" : "itens"}
                           </h2>
                           <button
                             onClick={clearCart}

@@ -142,11 +142,10 @@ export default function AdminUsuariosPage() {
         console.error(' Erro na resposta:', errorData);
         throw new Error(errorData.detail || `Erro ${response.status}`);
       }
-
+      
       const data = await response.json();
       console.log(' Usuários carregados:', data);
       
-      // Garantir que sempre seja um array
       if (Array.isArray(data)) {
         setUsers(data);
       } else if (data && Array.isArray(data.users)) {

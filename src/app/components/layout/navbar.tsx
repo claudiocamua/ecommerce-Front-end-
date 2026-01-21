@@ -8,19 +8,26 @@ import Button from "../ui/Button";
 import ModalAuth from "../auth/ModalAuth";
 import { useAuthStore } from "@/store/useAuthStore";
 import { authService } from "@/app/services/auth";
+import { useRouter } from "next/navigation";
 
-export default function Navbar() {
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authType, setAuthType] = useState<"login" | "register">("login");
+interface NavbarProps {
+  setAuthOpen?: (open: boolean) => void;
+  setAuthType?: (type: "login" | "register") => void;
+}
+
+export default function Navbar({ setAuthOpen, setAuthType }: NavbarProps = {}) {
   const [isOpen, setIsOpen] = useState(false);
+  const router = useRouter();
+  const [authOpen, setAuthOpenState] = useState(false);
+  const [authType, setAuthTypeState] = useState<"login" | "register">("login");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const { user, logout } = useAuthStore();
 
   useEffect(() => {
     const handleOpenAuth = (e: CustomEvent) => {
-      setAuthType(e.detail || 'login');
-      setAuthOpen(true);
+      setAuthTypeState(e.detail || 'login');
+      setAuthOpenState(true);
     };
 
     window.addEventListener('openAuthModal', handleOpenAuth as EventListener);
@@ -43,19 +50,37 @@ export default function Navbar() {
     logout();
   }
 
-  function openLogin() {
-    setAuthType("login");
-    setAuthOpen(true);
-  }
+  const openLogin = () => {
+    if (setAuthOpen && setAuthType) {
+      setAuthOpen(true);
+      setAuthType("login");
+    } else {
+      setAuthOpenState(true);
+      setAuthTypeState("login");
+    }
+  };
 
-  function openRegister() {
-    setAuthType("register");
-    setAuthOpen(true);
-  }
+  const openRegister = () => {
+    if (setAuthOpen && setAuthType) {
+      setAuthOpen(true);
+      setAuthType("register");
+    } else {
+      setAuthOpenState(true);
+      setAuthTypeState("register");
+    }
+  };
 
-  function closeAuth() {
-    setAuthOpen(false);
-  }
+  const closeAuth = () => {
+    if (setAuthOpen) {
+      setAuthOpen(false);
+    } else {
+      setAuthOpenState(false);
+    }
+  };
+
+  // Use authOpen e authType do estado local ou das props
+  const isAuthOpen = setAuthOpen ? authOpen : authOpen;
+  const currentAuthType = setAuthType ? authType : authType;
 
   return (
     <nav className="fixed top-0 left-0 w-full z-50 backdrop-blur-md shadow-md border-border">
@@ -83,24 +108,24 @@ export default function Navbar() {
             {!isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <Button
-                  className="botao--contorno"
                   variant="ghost"
                   onClick={() =>
-                    authOpen && authType === "login"
+                    isAuthOpen && currentAuthType === "login"
                       ? closeAuth()
                       : openLogin()
                   }
+                  className="text-white hover:text-yellow-400 transition-colors"
                 >
-                  {authOpen && authType === "login" ? "Fechar" : "Entrar"}
+                  {isAuthOpen && currentAuthType === "login" ? "Fechar" : "Login"}
                 </Button>
 
                 <Button
-                  className="botao botao--primario"
                   onClick={() =>
                     authOpen && authType === "register"
                       ? closeAuth()
                       : openRegister()
                   }
+                  className="botao botao--primario"
                 >
                   {authOpen && authType === "register"
                     ? "Fechar"

@@ -1,36 +1,22 @@
 import api from '@/lib/axios';
 
 export interface Order {
-  _id?: string;
   id: string;
+  _id?: string; 
+  order_number?: string;
   user_id: string;
-  items: Array<{
-    product_id: string;
-    product_name: string;
-    product_price: number;
-    quantity: number;
-    subtotal: number;
-    image_url?: string;
-  }>;
-  total: number;
-  subtotal: number;
-  discount: number;
-  shipping: number;
   status: string;
-  payment_method: string;
-  payment_status: string;
-  shipping_address?: {
-    street: string;
-    number: string;
-    complement?: string;
-    neighborhood: string;
-    city: string;
-    state: string;
-    zip_code: string;
-  };
-  created_at: string;
-  updated_at: string;
+  payment_status?: string; 
+  total: number;
   total_amount?: number;
+  subtotal?: number;
+  discount?: number;
+  shipping_cost?: number;
+  payment_method?: string;
+  created_at: string;
+  updated_at?: string;
+  items?: any[];
+  shipping_address?: any;
 }
 
 const normalizeOrder = (order: any): Order => {

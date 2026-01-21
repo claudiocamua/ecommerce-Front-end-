@@ -181,7 +181,7 @@ export default function EditProductPage() {
   function removeImage() {
     setImage(null)
     setImagePreview(null)
-    toast.info("Nova imagem removida")
+    toast("Nova imagem removida")
   }
 
   async function handleSubmit(e: React.FormEvent) {

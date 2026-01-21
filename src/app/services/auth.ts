@@ -11,7 +11,7 @@ interface LoginResponse {
   user?: any;
 }
 
-export const authService = {
+class AuthService {
   async login(email: string, password: string) {
     const response = await api.post("/auth/login", { email, password });
     const { access_token, user } = response.data;
@@ -29,25 +29,25 @@ export const authService = {
     localStorage.setItem("user", JSON.stringify(userData));
 
     return { access_token, user: userData };
-  },
+  }
 
   async getProfile() {
     const response = await api.get("/auth/me");
     return response.data;
-  },
+  }
 
   saveToken(token: string) {
     if (typeof window !== "undefined") {
-      localStorage.setItem("access_token", token); 
+      localStorage.setItem("access_token", token);
     }
-  },
+  }
 
   getToken() {
     if (typeof window !== "undefined") {
-      return localStorage.getItem("access_token"); 
+      return localStorage.getItem("access_token");
     }
     return null;
-  },
+  }
 
   saveUser(user: any) {
     if (typeof window !== "undefined") {
@@ -57,7 +57,7 @@ export const authService = {
       };
       localStorage.setItem("user", JSON.stringify(userData));
     }
-  },
+  }
 
   getUser() {
     if (typeof window === "undefined") return null;
@@ -71,20 +71,20 @@ export const authService = {
       //CONVERTER is_admin PARA BOOLEAN VERDADEIRO
       const isAdmin = user.is_admin === true || user.is_admin === "true";
 
-      console.log("🔍 [AUTH SERVICE] User do localStorage:", user);
-      console.log("🔍 [AUTH SERVICE] is_admin ORIGINAL:", user.is_admin);
-      console.log("🔍 [AUTH SERVICE] Tipo ORIGINAL:", typeof user.is_admin);
-      console.log("🔍 [AUTH SERVICE] isAdmin CONVERTIDO:", isAdmin);
+      console.log(" [AUTH SERVICE] User do localStorage:", user);
+      console.log(" [AUTH SERVICE] is_admin ORIGINAL:", user.is_admin);
+      console.log(" [AUTH SERVICE] Tipo ORIGINAL:", typeof user.is_admin);
+      console.log(" [AUTH SERVICE] isAdmin CONVERTIDO:", isAdmin);
 
       return {
         ...user,
-        is_admin: isAdmin, 
+        is_admin: isAdmin,
       };
     } catch (error) {
       console.error(" Erro ao parsear usuário:", error);
       return null;
     }
-  },
+  }
 
   logout() {
     if (typeof window !== "undefined") {
@@ -92,11 +92,34 @@ export const authService = {
       localStorage.removeItem("user");
       window.location.href = "/";
     }
-  },
+  }
 
   isAuthenticated() {
     const token = this.getToken();
     console.log(" [AUTH] isAuthenticated - Token:", !!token);
     return !!token;
-  },
-};
+  }
+
+  async register(data: {
+    email: string;
+    password: string;
+    full_name: string;
+  }): Promise<{ access_token: string; user: any }> {
+    try {
+      const response = await api.post("/auth/register", data);
+
+      // Salvar token e usuário
+      if (response.data.access_token) {
+        this.saveToken(response.data.access_token);
+        this.saveUser(response.data.user);
+      }
+
+      return response.data;
+    } catch (error: any) {
+      console.error("Erro ao registrar:", error);
+      throw error;
+    }
+  }
+}
+
+export const authService = new AuthService();

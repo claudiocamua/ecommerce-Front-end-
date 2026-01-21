@@ -80,10 +80,10 @@ export default function NewProductPage() {
     }
   }
 
-  function removeImage() {
+  function handleRemoveImage() {
     setImage(null);
     setImagePreview(null);
-    toast.info("Imagem removida");
+    toast("Imagem removida");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -403,7 +403,7 @@ export default function NewProductPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={removeImage}
+                  onClick={handleRemoveImage}
                   className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition"
                 >
                    Remover

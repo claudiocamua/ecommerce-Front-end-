@@ -105,14 +105,18 @@ export default function OrdersPage() {
         router.push("/auth");
         return;
       }
+      const apiEndpoint = typeof window !== 'undefined' 
+        ? '/api/orders'  
+        : `${API_URL}/orders`; 
 
-      console.log("[ORDERS PAGE]  Buscando pedidos do FastAPI...");
-      console.log("[ORDERS PAGE]  URL:", `${API_URL}/orders`);
+      console.log("[ORDERS PAGE]  URL da API:", apiEndpoint);
 
-      const response = await fetch(`${API_URL}/orders`, { 
+      const response = await fetch(apiEndpoint, { 
         headers: {
           Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
         },
+        cache: 'no-store', 
       });
 
       console.log("[ORDERS PAGE]  Status:", response.status);
@@ -150,9 +154,9 @@ export default function OrdersPage() {
           total: order.total_amount || order.total
         });
       });
-
+      // Mapeando pedidos para o formato esperado
       const mappedOrders = ordersList.map((order: any, index: number) => {
-        //  GERAR ID ÚNICO BASEADO NO ÍNDICE + TIMESTAMP
+        
         const uniqueId = order._id || order.id || `temp-${Date.now()}-${index}`;
         
         return {

@@ -15,7 +15,7 @@ export interface CartItem {
 
 export interface Cart {
   items: CartItem[];
-  total: number;
+  // outras propriedades...
 }
 export const cartService = {
   async addToCart(productId: string, quantity: number = 1) {

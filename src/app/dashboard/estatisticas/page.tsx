@@ -51,6 +51,16 @@ interface CategoryStat {
   total: number;
 }
 
+interface OrdersResponse {
+  orders?: any[];
+}
+
+interface OrderItem {
+  product_name?: string;
+  quantity: number;
+  subtotal?: number;
+}
+
 export default function EstatisticasPage() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
@@ -101,7 +111,14 @@ export default function EstatisticasPage() {
     try {
       const data = await ordersService.getAllOrders();
       
-      const orders = (Array.isArray(data) ? data : data.orders || []).map(order => ({
+      let ordersList: any[] = [];
+      if (Array.isArray(data)) {
+        ordersList = data;
+      } else if (data && typeof data === 'object' && 'orders' in data) {
+        ordersList = (data as OrdersResponse).orders || [];
+      }
+      
+      const orders = ordersList.map(order => ({
         ...order,
         status: normalizeStatus(order.status)
       }));
@@ -125,13 +142,13 @@ export default function EstatisticasPage() {
       const totalItemsPurchased = orders.reduce(
         (sum, order) =>
           sum +
-          (order.items?.reduce((itemSum, item) => itemSum + item.quantity, 0) || 0),
+          (order.items?.reduce((itemSum: number, item: OrderItem) => itemSum + item.quantity, 0) || 0),
         0
       );
       // Cálculo da categoria favorita
       const categoryCount: Record<string, number> = {};
       orders.forEach((order) => {
-        order.items?.forEach((item) => {
+        order.items?.forEach((item: OrderItem) => {
           const category = item.product_name?.split(" ")[0] || "Outros";
           categoryCount[category] = (categoryCount[category] || 0) + item.quantity;
         });
@@ -167,7 +184,7 @@ export default function EstatisticasPage() {
 
       const categoryTotals: Record<string, { count: number; total: number }> = {};
       orders.forEach((order) => {
-        order.items?.forEach((item) => {
+        order.items?.forEach((item: OrderItem) => {
           const category = item.product_name?.split(" ")[0] || "Outros";
           if (!categoryTotals[category]) {
             categoryTotals[category] = { count: 0, total: 0 };

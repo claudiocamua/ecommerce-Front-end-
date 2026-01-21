@@ -104,7 +104,7 @@ export default function CheckoutPage() {
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/payment/methods`);
         const data = await response.json();
 
-        console.log(' Métodos de pagamento recebidos:', data);
+        console.log('Métodos de pagamento recebidos:', data);
 
         if (data.methods && Array.isArray(data.methods)) {
           const mappedMethods: PaymentOption[] = data.methods.map((method: any) => ({
@@ -118,7 +118,6 @@ export default function CheckoutPage() {
 
           setPaymentOptions(mappedMethods);
           
-          // Definir PIX como padrão se existir
           const pixMethod = mappedMethods.find(m => m.id === "pix");
           if (pixMethod) {
             setSelectedPaymentMethod("pix");
@@ -127,10 +126,9 @@ export default function CheckoutPage() {
           }
         }
       } catch (error) {
-        console.error(' Erro ao buscar métodos de pagamento:', error);
+        console.error('Erro ao buscar métodos de pagamento:', error);
         toast.error('Erro ao carregar métodos de pagamento');
         
-        // Fallback para métodos padrão
         setPaymentOptions([
           {
             id: "pix",
@@ -152,104 +150,71 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (!authService.isAuthenticated()) {
       toast.error("Faça login para continuar");
-      router.push("/login");
+      router.push("/");
     }
   }, [router]);
 
-  // Processar resposta do pagamento baseado no método
+  // Processar resposta do pagamento
   const handlePaymentResponse = (order: OrderResponse) => {
-    console.log(' handlePaymentResponse CHAMADO com:', order);
+    console.log('Processando resposta do pedido:', order);
     
     const { payment_status, payment_method, qr_code, ticket_url } = order;
 
-    console.log(' Dados extraídos:', {
-      payment_status,
-      payment_method,
-      qr_code: !!qr_code,
-      qr_code_length: qr_code?.length,
-      ticket_url: !!ticket_url
-    });
-
-    console.log(' Salvando orderResponse no estado...');
     setOrderResponse(order);
 
     switch (payment_status) {
       case 'approved':
-        console.log(' Pagamento PIX APROVADO!');
-        
         if (payment_method === 'pix' && qr_code) {
-          console.log(' ABRINDO MODAL PIX!');
-          console.log(' setShowPixModal(true)');
           setShowPixModal(true);
-          console.log(' Modal PIX deve estar aberto agora');
         } else {
-          console.log(' Não vai abrir modal:', { payment_method, has_qr_code: !!qr_code });
-          toast.success(' Pagamento aprovado! Redirecionando...');
+          toast.success('Pagamento aprovado! Redirecionando...');
           clearCart();
-          setTimeout(() => {
-            router.push(`/pedido/${order.id}/confirmado`);
-          }, 2000);
+          setTimeout(() => router.push(`/pedido/${order.id}/confirmado`), 2000);
         }
         break;
 
       case 'rejected':
-        console.log(' Pagamento NEGADO!');
-        toast.error(' Pagamento Recusado\n\nTente outro método de pagamento.');
-        setTimeout(() => {
-          router.push(`/pedido/${order.id}/rejeitado`);
-        }, 2000);
+        toast.error('Pagamento recusado. Tente outro método de pagamento.');
+        setTimeout(() => router.push(`/pedido/${order.id}/rejeitado`), 2000);
         break;
 
       case 'in_process':
-        console.log(' Pagamento EM PROCESSAMENTO...');
-        toast.loading(' Pagamento em Análise\n\nVocê receberá um email de confirmação.', { 
+        toast.loading('Pagamento em análise. Você receberá um email de confirmação.', { 
           duration: 5000 
         });
         clearCart();
-        setTimeout(() => {
-          router.push(`/pedido/${order.id}/pendente`);
-        }, 2000);
+        setTimeout(() => router.push(`/pedido/${order.id}/pendente`), 2000);
         break;
 
       case 'pending':
-        console.log(' Boleto gerado!');
-        
         if (payment_method === 'boleto' && ticket_url) {
-          console.log(' ABRINDO MODAL BOLETO!');
-          console.log(' setShowBoletoModal(true)');
           setShowBoletoModal(true);
-          console.log(' Modal Boleto deve estar aberto agora');
         } else {
-          console.log(' Não vai abrir modal:', { payment_method, has_ticket_url: !!ticket_url });
-          toast.success(' Pedido criado! Aguardando pagamento.');
+          toast.success('Pedido criado! Aguardando pagamento.');
           clearCart();
-          setTimeout(() => {
-            router.push(`/pedido/${order.id}/pendente`);
-          }, 2000);
+          setTimeout(() => router.push(`/pedido/${order.id}/pendente`), 2000);
         }
         break;
 
       default:
-        console.warn(' Status desconhecido:', payment_status);
-        toast.info('Pedido criado! Verifique o status.');
+        toast('Pedido criado! Verifique o status.');
         clearCart();
-        router.push(`/dashboard`);
+        router.push(`/dashboard/orders`);
     }
   };
 
-  // Criar pedido com método de pagamento escolhido
+  // Criar pedido
   const createOrder = async (paymentMethod: PaymentMethod) => {
-    console.log(' createOrder CHAMADO com método:', paymentMethod);
+    console.log('Criando pedido com método:', paymentMethod);
     
     const token = localStorage.getItem('access_token');
 
     if (!token) {
       toast.error("Você precisa estar logado");
-      router.push("/login");
+      router.push("/");
       return;
     }
 
-    // Montar dados do pedido
     const orderData = {
       payment_method: paymentMethod,
       shipping_address: {
@@ -265,8 +230,6 @@ export default function CheckoutPage() {
       coupon_code: null
     };
 
-    console.log(' Enviando pedido:', orderData);
-
     try {
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/orders`, {
         method: 'POST',
@@ -279,38 +242,29 @@ export default function CheckoutPage() {
 
       const result = await response.json();
 
-      console.log(' Resposta recebida:', result);
-
       if (response.ok) {
-        console.log(' Pedido criado com sucesso!');
-        console.log(' Chamando handlePaymentResponse...');
-        
-        // Processar resposta baseado no status do pagamento
+        console.log('Pedido criado com sucesso:', result);
         handlePaymentResponse(result);
-        
         return result;
       } else {
-        console.error(' Erro ao criar pedido:', result.detail);
+        console.error('Erro ao criar pedido:', result.detail);
         toast.error(result.detail || 'Erro ao criar pedido');
         return null;
       }
     } catch (error) {
-      console.error(' Erro na requisição:', error);
+      console.error('Erro na requisição:', error);
       toast.error('Erro ao processar pedido');
       return null;
     }
   };
-  // Manipulador do checkout
+
   const handleCheckout = async () => {
-    console.log(' handleCheckout CHAMADO');
-    console.log(' Método selecionado:', selectedPaymentMethod);
-    
     setLoading(true);
 
     try {
       await createOrder(selectedPaymentMethod);
     } catch (error: any) {
-      console.error(" Erro no checkout:", error);
+      console.error("Erro no checkout:", error);
       toast.error(error.message || "Erro ao processar pedido");
     } finally {
       setLoading(false);
@@ -318,18 +272,14 @@ export default function CheckoutPage() {
   };
 
   const handleClosePixModal = () => {
-    console.log(' Fechando modal PIX');
     setShowPixModal(false);
     clearCart();
-    // Redirecionar para página de pedidos existente
     router.push('/dashboard/orders');
   };
 
   const handleCloseBoletoModal = () => {
-    console.log(' Fechando modal Boleto');
     setShowBoletoModal(false);
     clearCart();
-    // Redirecionar para página de pedidos existente
     router.push('/dashboard/orders');
   };
 
@@ -387,14 +337,13 @@ export default function CheckoutPage() {
         <NavbarDashboard user={user} />
         <div className="flex-1 flex items-center justify-center p-6">
           <div className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl p-12 text-center border border-white/20 max-w-md">
-            <div className="text-6xl mb-4">🛒</div>
             <h1 className="text-2xl font-bold text-white mb-4">Carrinho Vazio</h1>
             <p className="text-white/80 mb-6">Adicione produtos para finalizar a compra</p>
             <button
-              onClick={() => router.push("/dashboard")}
+              onClick={() => router.push("/products")}
               className="bg-yellow-400 text-gray-900 px-6 py-3 rounded-xl hover:bg-yellow-500 font-bold transition-all shadow-lg hover:shadow-xl"
             >
-              Ir às Compras
+              Ver Produtos
             </button>
           </div>
         </div>
@@ -407,12 +356,6 @@ export default function CheckoutPage() {
   const totalWithoutDiscount = calculateTotalWithoutDiscount();
   const totalSaved = totalWithoutDiscount - totalWithDiscount;
 
-  console.log(' Render - Estados dos modais:', { 
-    showPixModal, 
-    showBoletoModal,
-    hasOrderResponse: !!orderResponse
-  });
-
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-black">
       <NavbarDashboard user={user} />
@@ -420,14 +363,13 @@ export default function CheckoutPage() {
       <div className="flex-1 overflow-y-auto">
         <main className="max-w-7xl mx-auto px-4 py-8">
           <h1 className="text-3xl md:text-4xl font-bold text-yellow-400 mb-8">
-             Finalizar Compra
+            Finalizar Compra
           </h1>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Coluna Esquerda - Métodos de Pagamento */}
             <div className="lg:col-span-2">
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-white/20">
-                <h2 className="text-xl font-bold text-white mb-6"> Escolha o Método de Pagamento</h2>
+                <h2 className="text-xl font-bold text-white mb-6">Escolha o Método de Pagamento</h2>
 
                 {paymentOptions.length === 0 ? (
                   <div className="text-center py-8">
@@ -478,16 +420,15 @@ export default function CheckoutPage() {
 
                 <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
                   <p className="text-sm text-yellow-800">
-                     <strong>Modo de Teste:</strong> Este é um sistema de pagamento simulado para fins de demonstração.
+                    <strong>Modo de Teste:</strong> Este é um sistema de pagamento simulado para fins de demonstração.
                   </p>
                 </div>
               </div>
             </div>
 
-            {/* Coluna Direita - Resumo do Pedido */}
             <div className="lg:col-span-1">
               <div className="bg-white/10 backdrop-blur-md rounded-2xl p-6 shadow-xl border border-white/20 sticky top-24">
-                <h2 className="text-xl font-bold text-white mb-6"> Resumo do Pedido</h2>
+                <h2 className="text-xl font-bold text-white mb-6">Resumo do Pedido</h2>
 
                 <div className="space-y-3 mb-6 max-h-64 overflow-y-auto">
                   {cart.map((item) => {
@@ -574,12 +515,12 @@ export default function CheckoutPage() {
                       Processando...
                     </span>
                   ) : (
-                    ` Finalizar Pedido`
+                    `Finalizar Pedido`
                   )}
                 </button>
 
                 <p className="text-xs text-white/60 text-center mt-4">
-                   Pagamento 100% seguro e protegido
+                  Pagamento 100% seguro e protegido
                 </p>
               </div>
             </div>
@@ -589,7 +530,6 @@ export default function CheckoutPage() {
 
       <Footer />
 
-      {/* Modais */}
       {showPixModal && orderResponse && (
         <PixPaymentModal
           qrCode={orderResponse.qr_code || ""}

@@ -140,23 +140,48 @@ export default function OfertasPage() {
 
   const loadPromotions = async () => {
     try {
-      const response = await fetch("http://localhost:8000/promotions", {
-        headers: { Authorization: `Bearer ${authService.getToken()}` },
+      const token = authService.getToken();
+      if (!token) {
+        console.error(" Token não encontrado");
+        setPromotions([]);
+        return;
+      }
+
+      const baseURL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+      console.log(" Buscando promoções em:", `${baseURL}/promotions`);
+
+      const response = await fetch(`${baseURL}/promotions`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
       });
-      if (!response.ok) throw new Error("Erro ao buscar promoções");
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error(" Erro na resposta:", response.status, errorText);
+        throw new Error(`Erro ${response.status}: ${errorText}`);
+      }
+
       const data = await response.json();
+      console.log(" Promoções recebidas:", data);
+
       const now = new Date();
       const activePromotions = data.filter((promo: Promotion) => {
         const start = new Date(promo.start_date);
         const end = new Date(promo.end_date);
         return promo.is_active && start <= now && end >= now;
       });
+
+      console.log(" Promoções ativas:", activePromotions.length);
       setPromotions(activePromotions);
+
       if (activePromotions.length > 0) {
         toast.success(`${activePromotions.length} promoções ativas encontradas!`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(" Erro ao carregar promoções:", error);
+      toast.error(error.message || "Erro ao carregar promoções");
       setPromotions([]);
     }
   };
@@ -171,7 +196,7 @@ export default function OfertasPage() {
       }
       // Filtrar produtos com desconto
       const productsWithDiscount = data.products
-        .filter((p: Product) => (p.discount && p.discount > 0) || (p.discount_percentage && p.discount_percentage > 0))
+        .filter((p: any) => (p.discount && p.discount > 0) || (p.discount_percentage && p.discount_percentage > 0))
         .map((p: any) => {
           let discountPct = p.discount_percentage || (p.discount ? p.discount * 100 : 0);
           return {
@@ -292,8 +317,15 @@ export default function OfertasPage() {
               </div>
             )}
           </div>
-          <button onClick={() => router.push("/dashboard/products")} className="w-full bg-white text-gray-900 font-bold py-3 px-6 rounded-lg hover:bg-gray-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg">
-            <ShoppingCartIcon className="w-5 h-5" />Ver Produtos
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push("/dashboard/products");
+            }} 
+            className="w-full bg-white text-gray-900 font-bold py-3 px-6 rounded-lg hover:bg-gray-100 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
+          >
+            <ShoppingCartIcon className="w-5 h-5" />
+            Ver Produtos
           </button>
           {promotion.type === "coupon_code" && promotion.coupon_code && (
             <div className="mt-4 pt-4 border-t border-white/20">
@@ -310,7 +342,7 @@ export default function OfertasPage() {
 
   const ProductCard = ({ product }: { product: Product }) => {
     const discount = product.discount_percentage || Math.round((product.discount || 0) * 100);
-    const discountDecimal = product.discount || (product.discount_percentage / 100);
+    const discountDecimal = product.discount || ((product.discount_percentage || 0) / 100);
     const originalPrice = discountDecimal > 0 ? product.price / (1 - discountDecimal) : product.price;
     const savedAmount = originalPrice - product.price;
 
@@ -428,7 +460,15 @@ export default function OfertasPage() {
                   <TagIcon className="w-24 h-24 text-gray-400 mx-auto mb-4" />
                   <h2 className="text-2xl font-bold text-gray-900 mb-2">Nenhuma oferta disponível no momento</h2>
                   <p className="text-gray-600 mb-4">Não encontramos produtos com desconto ou promoções ativas.</p>
-                  <button onClick={() => router.push("/dashboard")} className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition">Voltar ao Dashboard</button>
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      router.push("/dashboard");
+                    }} 
+                    className="mt-6 bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Voltar ao Dashboard
+                  </button>
                 </div>
               ) : products.length > 0 ? (
                 <>

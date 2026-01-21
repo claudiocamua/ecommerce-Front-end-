@@ -126,7 +126,7 @@ export default function DestaquesPage() {
 
   const handleAddToCart = async (id: string, qty: number) => {
     try {
-      await cartService.addItem(id, qty);
+      await cartService.addToCart(id, qty);
       toast.success("Produto adicionado!");
     } catch {
       toast.error("Erro ao adicionar");
@@ -243,7 +243,6 @@ export default function DestaquesPage() {
 
           <ComingSoon />
 
-          {/* PREMIUM */}
           <section className="mt-10">
             <div className="flex items-center gap-2 mb-5">
               <CurrencyDollarIcon className="w-7 h-7 text-yellow-400" />
@@ -254,12 +253,11 @@ export default function DestaquesPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {mostExpensiveProducts.map((p) => (
-                <ProductCard key={p.id} product={p} badge="💎" />
+                <ProductCard key={p.id} product={p} />
               ))}
             </div>
           </section>
 
-          {/* POPULARES */}
           <section className="mt-16">
             <div className="flex items-center gap-2 mb-5">
               <FireIcon className="w-7 h-7 text-red-500" />

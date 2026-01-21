@@ -103,7 +103,7 @@ export default function PaymentForm({ paymentMethod, totalAmount, onPaymentCompl
     return cleaned;
   };
 
-  // Renderizar formulário baseado no método
+  // Renderizar conteúdo do formulário baseado no método de pagamento
   const renderPaymentContent = () => {
     switch (paymentMethod) {
       case "credit_card":
@@ -262,7 +262,7 @@ export default function PaymentForm({ paymentMethod, totalAmount, onPaymentCompl
 
                 <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
                   <p className="text-sm text-yellow-800">
-                    ⏱️ O QR Code expira em <strong>30 minutos</strong>. Após o pagamento, seu pedido será confirmado automaticamente.
+                     O QR Code expira em <strong>30 minutos</strong>. Após o pagamento, seu pedido será confirmado automaticamente.
                   </p>
                 </div>
 
@@ -270,7 +270,7 @@ export default function PaymentForm({ paymentMethod, totalAmount, onPaymentCompl
                   onClick={onPaymentComplete}
                   className="w-full py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition"
                 >
-                  ✅ Já fiz o pagamento
+                   Já fiz o pagamento
                 </button>
               </div>
             )}
@@ -331,7 +331,7 @@ export default function PaymentForm({ paymentMethod, totalAmount, onPaymentCompl
 
                 <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded">
                   <p className="text-sm text-red-800">
-                    ⚠️ Vencimento: <strong>3 dias úteis</strong>. O pedido será confirmado após a compensação bancária (até 2 dias úteis).
+                     Vencimento: <strong>3 dias úteis</strong>. O pedido será confirmado após a compensação bancária (até 2 dias úteis).
                   </p>
                 </div>
 
@@ -340,13 +340,13 @@ export default function PaymentForm({ paymentMethod, totalAmount, onPaymentCompl
                     onClick={() => window.print()}
                     className="py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 font-semibold transition"
                   >
-                    🖨️ Imprimir Boleto
+                     Imprimir Boleto
                   </button>
                   <button
                     onClick={onPaymentComplete}
                     className="py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 font-semibold transition"
                   >
-                    ✅ Concluir
+                     Concluir
                   </button>
                 </div>
               </div>
@@ -362,14 +362,14 @@ export default function PaymentForm({ paymentMethod, totalAmount, onPaymentCompl
   return (
     <div className="bg-white rounded-lg shadow-lg p-6">
       <div className="flex items-center gap-3 mb-6 pb-4 border-b">
-        <span className="text-3xl">{PAYMENT_ICONS[paymentMethod]}</span>
+        {(() => {
+          const IconComponent = PAYMENT_ICONS[paymentMethod];
+          return <IconComponent className="w-8 h-8 text-blue-600" />;
+        })()}
         <div>
           <h2 className="text-xl font-bold text-gray-900">
             {PAYMENT_METHODS[paymentMethod]}
           </h2>
-          <p className="text-sm text-gray-600">
-            Total a pagar: <span className="font-bold text-blue-600">R$ {totalAmount.toFixed(2)}</span>
-          </p>
         </div>
       </div>
 

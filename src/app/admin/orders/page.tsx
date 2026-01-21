@@ -6,7 +6,7 @@ import { ordersService, Order } from "@/app/services/orders";
 import { authStorage } from "@/lib/auth"; 
 import { authService } from "@/app/services/auth";
 import { toast } from "react-hot-toast";
-import { getPaymentMethodDisplay, PaymentMethodKey } from "@/app/utils/paymentMethods";
+import { getPaymentMethodLabel, PaymentMethodKey, PAYMENT_ICONS } from "@/app/utils/paymentMethods";
 import {
   MagnifyingGlassIcon,
   FunnelIcon,
@@ -127,11 +127,11 @@ export default function AdminOrdersPage() {
     setFilteredOrders(filtered);
   };
   // Abre o modal de edição
-  const handleOpenEditModal = (order: Order) => {
+  const handleEdit = (order: Order) => {
     setSelectedOrder(order);
     setEditOrderStatus(order.status);
     setEditPaymentStatus(order.payment_status || "pending");
-    setEditPaymentMethod(order.payment_method);
+    setEditPaymentMethod(order.payment_method || "");
     setShowEditModal(true);
   };
   // Atualiza o pedido
@@ -469,121 +469,127 @@ export default function AdminOrdersPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {filteredOrders.map((order, index) => (
-                <div
-                  key={order.id || order._id || `order-${index}`}
-                  className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl hover:bg-white/15 transition-all border border-white/20 overflow-hidden"
-                >
-                  <div className="p-6">
-                    <div className="flex flex-wrap items-center justify-between mb-4 pb-4 border-b border-white/20">
-                      <div>
-                        <h3 className="text-xl font-bold text-white mb-1">
-                          Pedido #{formatOrderId(order.id)}
-                        </h3>
-                        <p className="text-sm text-white/70">{formatDate(order.created_at)}</p>
+              {filteredOrders.map((order, index) => {
+                // Obtenha o ícone antes de usar no JSX
+                const PaymentIcon = PAYMENT_ICONS[order.payment_method as PaymentMethodKey];
+                
+                return (
+                  <div
+                    key={order.id || order._id || `order-${index}`}
+                    className="bg-white/10 backdrop-blur-md rounded-3xl shadow-2xl hover:bg-white/15 transition-all border border-white/20 overflow-hidden"
+                  >
+                    <div className="p-6">
+                      <div className="flex flex-wrap items-center justify-between mb-4 pb-4 border-b border-white/20">
+                        <div>
+                          <h3 className="text-xl font-bold text-white mb-1">
+                            Pedido #{formatOrderId(order.id)}
+                          </h3>
+                          <p className="text-sm text-white/70">{formatDate(order.created_at)}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(order.status)}
+                          {getPaymentStatusBadge(order.payment_status || "pending")}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {getStatusBadge(order.status)}
-                        {getPaymentStatusBadge(order.payment_status || "pending")}
-                      </div>
-                    </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                        <p className="text-sm text-white/70 mb-1">Cliente</p>
-                        <p className="font-semibold text-white">{formatUserId(order.user_id)}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                          <p className="text-sm text-white/70 mb-1">Cliente</p>
+                          <p className="font-semibold text-white">{formatUserId(order.user_id)}</p>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                          <p className="text-sm text-white/70 mb-1">Pagamento</p>
+                          <div className="flex items-center gap-2">
+                            {PaymentIcon && <PaymentIcon className="w-5 h-5 text-yellow-500" />}
+                            <span>{getPaymentMethodLabel(order.payment_method as PaymentMethodKey)}</span>
+                          </div>
+                        </div>
+                        <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                          <p className="text-sm text-white/70 mb-1">Total</p>
+                          <p className="text-2xl font-bold text-yellow-400">
+                            R$ {(order.total_amount || order.total || 0).toFixed(2)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                        <p className="text-sm text-white/70 mb-1">Pagamento</p>
-                        <p className="font-semibold text-white">
-                          {getPaymentMethodDisplay(order.payment_method as PaymentMethodKey)}
-                        </p>
-                      </div>
-                      <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                        <p className="text-sm text-white/70 mb-1">Total</p>
-                        <p className="text-2xl font-bold text-yellow-400">
-                          R$ {(order.total_amount || order.total || 0).toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
 
-                    {order.shipping_address && (
-                      <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/10">
-                        <p className="text-sm text-white/70 mb-2">📍 Endereço de Entrega</p>
-                        <p className="text-white">
-                          {order.shipping_address.street}, {order.shipping_address.number}
-                          {order.shipping_address.complement && ` - ${order.shipping_address.complement}`}
-                          <br />
-                          {order.shipping_address.neighborhood} - {order.shipping_address.city}/{order.shipping_address.state}
-                          <br />
-                          CEP: {order.shipping_address.zip_code}
-                        </p>
-                      </div>
-                    )}
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => router.push(`/orders/${order.id}`)}
-                        className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all border border-white/20 flex items-center gap-2 font-semibold"
-                      >
-                        <EyeIcon className="w-4 h-4" />
-                        Ver Detalhes
-                      </button>
-
-                      <button
-                        onClick={() => handleOpenEditModal(order)}
-                        className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 rounded-xl transition-all border border-orange-400/50 flex items-center gap-2 font-semibold"
-                      >
-                        <PencilSquareIcon className="w-4 h-4" />
-                        Editar Pedido
-                      </button>
-
-                      {order.status === "pending" && (
-                        <button
-                          onClick={() => handleConfirmPayment(order.id)}
-                          className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-xl transition-all border border-green-400/50 flex items-center gap-2 font-semibold"
-                        >
-                          <CheckCircleIcon className="w-4 h-4" />
-                          Confirmar Pagamento
-                        </button>
+                      {order.shipping_address && (
+                        <div className="bg-white/5 rounded-xl p-4 mb-6 border border-white/10">
+                          <p className="text-sm text-white/70 mb-2"> Endereço de Entrega</p>
+                          <p className="text-white">
+                            {order.shipping_address.street}, {order.shipping_address.number}
+                            {order.shipping_address.complement && ` - ${order.shipping_address.complement}`}
+                            <br />
+                            {order.shipping_address.neighborhood} - {order.shipping_address.city}/{order.shipping_address.state}
+                            <br />
+                            CEP: {order.shipping_address.zip_code}
+                          </p>
+                        </div>
                       )}
 
-                      {order.status === "processing" && (
+                      <div className="flex flex-wrap gap-2">
                         <button
-                          onClick={() => {
-                            setSelectedOrder(order);
-                            setShowModal(true);
-                          }}
-                          className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-xl transition-all border border-purple-400/50 flex items-center gap-2 font-semibold"
+                          onClick={() => router.push(`/orders/${order.id}`)}
+                          className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all border border-white/20 flex items-center gap-2 font-semibold"
                         >
-                          <TruckIcon className="w-4 h-4" />
-                          Marcar como Enviado
+                          <EyeIcon className="w-4 h-4" />
+                          Ver Detalhes
                         </button>
-                      )}
 
-                      {order.status === "shipped" && (
                         <button
-                          onClick={() => handleMarkAsDelivered(order.id)}
-                          className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-xl transition-all border border-blue-400/50 flex items-center gap-2 font-semibold"
+                          onClick={() => handleEdit(order)}
+                          className="px-4 py-2 bg-orange-500/20 hover:bg-orange-500/30 text-orange-300 rounded-xl transition-all border border-orange-400/50 flex items-center gap-2 font-semibold"
                         >
-                          <CheckCircleIcon className="w-4 h-4" />
-                          Marcar como Entregue
+                          <PencilSquareIcon className="w-4 h-4" />
+                          Editar Pedido
                         </button>
-                      )}
 
-                      {order.status !== "cancelled" && order.status !== "delivered" && (
-                        <button
-                          onClick={() => handleCancelOrder(order.id)}
-                          className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-xl transition-all border border-red-400/50 flex items-center gap-2 font-semibold"
-                        >
-                          <XCircleIcon className="w-4 h-4" />
-                          Cancelar Pedido
-                        </button>
-                      )}
+                        {order.status === "pending" && (
+                          <button
+                            onClick={() => handleConfirmPayment(order.id)}
+                            className="px-4 py-2 bg-green-500/20 hover:bg-green-500/30 text-green-300 rounded-xl transition-all border border-green-400/50 flex items-center gap-2 font-semibold"
+                          >
+                            <CheckCircleIcon className="w-4 h-4" />
+                            Confirmar Pagamento
+                          </button>
+                        )}
+
+                        {order.status === "processing" && (
+                          <button
+                            onClick={() => {
+                              setSelectedOrder(order);
+                              setShowModal(true);
+                            }}
+                            className="px-4 py-2 bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 rounded-xl transition-all border border-purple-400/50 flex items-center gap-2 font-semibold"
+                          >
+                            <TruckIcon className="w-4 h-4" />
+                            Marcar como Enviado
+                          </button>
+                        )}
+
+                        {order.status === "shipped" && (
+                          <button
+                            onClick={() => handleMarkAsDelivered(order.id)}
+                            className="px-4 py-2 bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 rounded-xl transition-all border border-blue-400/50 flex items-center gap-2 font-semibold"
+                          >
+                             <CheckCircleIcon className="w-4 h-4" />
+                            Marcar como Entregue
+                          </button>
+                        )}
+
+                        {order.status !== "cancelled" && order.status !== "delivered" && (
+                          <button
+                            onClick={() => handleCancelOrder(order.id)}
+                            className="px-4 py-2 bg-red-500/20 hover:bg-red-500/30 text-red-300 rounded-xl transition-all border border-red-400/50 flex items-center gap-2 font-semibold"
+                          >
+                            <XCircleIcon className="w-4 h-4" />
+                            Cancelar Pedido
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

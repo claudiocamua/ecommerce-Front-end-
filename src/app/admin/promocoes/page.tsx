@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { authService } from "@/app/services/auth";
-import { promotionsService, type Promotion, type CreatePromotionData } from "@/app/services/promotions";
+import { 
+  promotionsService, 
+  type Promotion, 
+  type CreatePromotionData 
+} from "@/app/services/promotions";
 import { toast } from "react-hot-toast";
 import {
   PlusIcon,
@@ -21,43 +25,7 @@ import {
   ClockIcon,
 } from "@heroicons/react/24/outline";
 
-type PromotionType = 
-  | "percentage_discount"    // Desconto percentual
-  | "buy_x_pay_y"           // Leve X Pague Y
-  | "free_shipping"         // Frete grátis
-  | "coupon_code"           // Cupom de desconto
-  | "progressive_discount"; // Desconto progressivo
-
-interface Promotion {
-  _id: string;
-  name: string;
-  description: string;
-  type: PromotionType;
-  start_date: string;
-  end_date: string;
-  is_active: boolean;
-  created_at: string;
-  
-  discount_percentage?: number;
-  buy_quantity?: number;
-  pay_quantity?: number;
-  min_purchase_amount?: number;
-  coupon_code?: string;
-  coupon_discount_type?: "percentage" | "fixed";
-  coupon_discount_value?: number;
-  max_uses?: number;
-  current_uses?: number;
-  progressive_tiers?: Array<{
-    min_amount: number;
-    discount_percentage: number;
-  }>;
-  product_ids?: string[];
-  category_ids?: string[];
-  min_order_value?: number;
-  max_uses_per_user?: number;
-}
-
-const promotionTypeLabels: Record<PromotionType, string> = {
+const promotionTypeLabels: Record<string, string> = {
   percentage_discount: "Desconto Percentual",
   buy_x_pay_y: "Leve X Pague Y",
   free_shipping: "Frete Grátis",
@@ -65,7 +33,7 @@ const promotionTypeLabels: Record<PromotionType, string> = {
   progressive_discount: "Desconto Progressivo",
 };
 
-const promotionTypeIcons: Record<PromotionType, any> = {
+const promotionTypeIcons: Record<string, any> = {
   percentage_discount: TagIcon,
   buy_x_pay_y: GiftIcon,
   free_shipping: TruckIcon,
@@ -73,7 +41,7 @@ const promotionTypeIcons: Record<PromotionType, any> = {
   progressive_discount: TagIcon,
 };
 
-const promotionTypeColors: Record<PromotionType, string> = {
+const promotionTypeColors: Record<string, string> = {
   percentage_discount: "bg-blue-100 text-blue-800",
   buy_x_pay_y: "bg-purple-100 text-purple-800",
   free_shipping: "bg-green-100 text-green-800",
@@ -721,7 +689,10 @@ export default function AdminPromocoesPage() {
                     <select
                       value={formData.type}
                       onChange={(e) =>
-                        setFormData({ ...formData, type: e.target.value as PromotionType })
+                        setFormData({ 
+                          ...formData, 
+                          type: e.target.value as "coupon_code" | "percentage_discount" | "buy_x_pay_y" | "free_shipping" | "progressive_discount"
+                        })
                       }
                       required
                       className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 text-white"

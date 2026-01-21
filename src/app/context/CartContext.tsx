@@ -11,8 +11,8 @@ interface CartItem {
   price: number;
   quantity: number;
   image?: string;
-  discount_percentage?: number;  // ADICIONAR
-  discount?: number;              // ADICIONAR
+  discount_percentage?: number; 
+  discount?: number;             
 }
 
 interface CartContextData {
@@ -58,7 +58,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
           price: product.price || product.unit_price || item.product_price || 0,
           quantity: item.quantity || 1,
           image: product.image || product.picture_url || item.product_image,
-          // ADICIONAR DESCONTOS
           discount_percentage: product.discount_percentage ?? item.discount_percentage,
           discount: product.discount ?? item.discount,
         };
@@ -105,11 +104,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   async function updateQuantity(productId: string, quantity: number) {
     try {
-      await cartService.updateQuantity(productId, quantity);
+      await cartService.updateCartItem(productId, quantity);
       await loadCart();
     } catch (error: any) {
       console.error(" Erro ao atualizar quantidade:", error);
-      toast.error(error.message || "Erro ao atualizar quantidade");
+      toast.error("Erro ao atualizar quantidade");
     }
   }
 

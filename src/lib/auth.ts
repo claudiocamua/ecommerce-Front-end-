@@ -1,38 +1,60 @@
 'use client';
 
-import { User, AuthToken } from '@/types/user';
+import { User as UserType, AuthToken } from '@/types/user';
 
 const TOKEN_KEY = 'access_token';
 const USER_KEY = 'user';
 
 export const authStorage = {
-  setAuth: (authData: AuthToken) => {
-    if (typeof window === 'undefined') return;
-    
-    localStorage.setItem(TOKEN_KEY, authData.access_token);
-    localStorage.setItem(USER_KEY, JSON.stringify(authData.user));
+  saveToken(token: string) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(TOKEN_KEY, token);
+    }
   },
 
-  getToken: (): string | null => {
-    if (typeof window === 'undefined') return null;
-    return localStorage.getItem(TOKEN_KEY);
+  getToken(): string | null {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem(TOKEN_KEY);
+    }
+    return null;
   },
 
-  getUser: (): User | null => {
-    if (typeof window === 'undefined') return null;
-    const userStr = localStorage.getItem(USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+  saveUser(user: UserType) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(USER_KEY, JSON.stringify(user));
+    }
   },
 
-  isAuthenticated: (): boolean => {
-    return !!authStorage.getToken();
+  getUser(): UserType | null {
+    if (typeof window !== 'undefined') {
+      const userStr = localStorage.getItem(USER_KEY);
+      if (userStr) {
+        return JSON.parse(userStr);
+      }
+    }
+    return null;
   },
 
-  clearAuth: () => {
-    if (typeof window === 'undefined') return;
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+  isAuthenticated(): boolean {
+    return !!this.getToken();
   },
+
+  removeToken() {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(TOKEN_KEY);
+    }
+  },
+
+  removeUser() {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem(USER_KEY);
+    }
+  },
+
+  clear() {
+    this.removeToken();
+    this.removeUser();
+  }
 };
 
 export function useAuth() {
@@ -45,8 +67,15 @@ export function useAuth() {
     token,
     isAuthenticated,
     logout: () => {
-      authStorage.clearAuth();
+      authStorage.clear();
       window.location.href = '/';
     },
   };
+}
+
+export interface User {
+  id: string;
+  email: string;
+  name?: string;
+  is_admin?: boolean;
 }

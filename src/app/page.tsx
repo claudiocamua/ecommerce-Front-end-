@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+export const dynamic = 'force-dynamic';
+
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { authService } from "@/app/services/auth";
@@ -9,11 +11,16 @@ import HeroSection from "./components/layout/HeroSection";
 import ModalAuth from "./components/auth/ModalAuth";
 import Footer from "./components/layout/Footer";
 
-export default function Home() {
+interface HomeContentProps {
+  authOpen: boolean;
+  setAuthOpen: (open: boolean) => void;
+  authType: "login" | "register";
+  setAuthType: (type: "login" | "register") => void;
+}
+
+function HomeContent({ authOpen, setAuthOpen, authType, setAuthType }: HomeContentProps) {
   const searchParams = useSearchParams();
   const [processandoToken, setProcessandoToken] = useState(false);
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authType, setAuthType] = useState<"login" | "register">("login");
 
   function openAuthModal(type: "login" | "register") {
     setAuthType(type);
@@ -28,10 +35,8 @@ export default function Home() {
       setProcessandoToken(true);
       console.log(" Token recebido do Google OAuth");
 
-      // Salvar token (igual ao login com email/senha)
       authService.saveToken(token);
 
-      // Buscar dados do usuário
       authService
         .getProfile()
         .then((user) => {
@@ -264,5 +269,28 @@ export default function Home() {
         />
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authType, setAuthType] = useState<"login" | "register">("login");
+
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-purple-900 to-black">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-yellow-400 mx-auto mb-4"></div>
+          <p className="text-white text-xl">Carregando...</p>
+        </div>
+      </div>
+    }>
+      <HomeContent 
+        authOpen={authOpen} 
+        setAuthOpen={setAuthOpen} 
+        authType={authType} 
+        setAuthType={setAuthType} 
+      />
+    </Suspense>
   );
 }

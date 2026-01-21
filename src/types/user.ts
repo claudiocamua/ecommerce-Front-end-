@@ -1,13 +1,10 @@
 export interface User {
-  _id: string;
+  id: string;
   email: string;
-  full_name: string;
-  is_active: boolean;
-  is_verified: boolean;
-  created_at: string;
-  oauth_provider?: string | null;
-  oauth_id?: string | null;
-  picture?: string | null;
+  name?: string;
+  is_admin?: boolean;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface AuthToken {

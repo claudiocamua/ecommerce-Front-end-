@@ -42,6 +42,7 @@ export default function UsuariosPage() {
     password: "",
     role: "customer",
     is_active: true,
+    is_verified: false, 
     is_admin: false,
   });
 
@@ -81,12 +82,11 @@ export default function UsuariosPage() {
         usersList = [];
       }
 
-      //  Garantir que _id e full_name existam
       const normalizedUsers: User[] = usersList.map(user => ({
-        _id: user._id || user.id, // Usar 'id' se '_id' não existir
+        _id: user._id || user.id, 
         id: user.id,
         email: user.email || "",
-        full_name: user.full_name || user.name || "Sem nome", // API retorna 'name' em vez de 'full_name'
+        full_name: user.full_name || user.name || "Sem nome", 
         name: user.name,
         is_active: user.is_active ?? true,
         is_verified: user.is_verified ?? false,
@@ -116,7 +116,6 @@ export default function UsuariosPage() {
     try {
       const token = localStorage.getItem("access_token");
       
-      //  LOG DE DEBUG
       console.log(" DEBUG handleCreateOrUpdate:");
       console.log("  editingUser:", editingUser);
       console.log("  editingUser?._id:", editingUser?._id);
@@ -198,38 +197,38 @@ export default function UsuariosPage() {
       toast.error("Erro ao excluir usuário");
     }
   };
-
-  const handleEdit = (user: User) => {
-    console.log(" DEBUG handleEdit:");
-    console.log("  user recebido:", user);
-    console.log("  user._id:", user._id);
-    console.log("  user.id:", user.id);
-    
-    //  Verificar se o usuário é válido
-    if (!user || (!user._id && !user.id)) {
-      toast.error("Erro: Dados do usuário inválidos");
-      console.error(" user sem _id ou id:", user);
+  // Manipula a edição de um usuário existente
+  const handleEdit = (user: any) => {
+    if (!user._id && !user.id) {
+      toast.error("ID do usuário não encontrado");
       return;
     }
-    
-    // Normalizar o usuário para garantir que _id exista
+
     const normalizedUser = {
-      ...user,
       _id: user._id || user.id,
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name || user.name || "",
+      name: user.name,
+      is_active: user.is_active ?? true,
+      is_verified: user.is_verified ?? false,
+      is_admin: user.is_admin ?? false,
+      role: user.role || "user",
+      created_at: user.created_at || new Date().toISOString(),
+      oauth_provider: user.oauth_provider || null,
     };
     
     setEditingUser(normalizedUser);
     setFormData({
       full_name: user.full_name || user.name || "",
       email: user.email || "",
-      password: "",
-      role: user.role || "customer",
+      password: "", 
       is_active: user.is_active ?? true,
+      is_verified: user.is_verified ?? false,
       is_admin: user.is_admin ?? false,
+      role: user.role || "customer",
     });
     setShowModal(true);
-    
-    console.log(" editingUser definido:", normalizedUser);
   };
 
   // Reseta o formulário e o estado de edição
@@ -240,6 +239,7 @@ export default function UsuariosPage() {
       password: "",
       role: "customer",
       is_active: true,
+      is_verified: false, 
       is_admin: false,
     });
     setEditingUser(null);
@@ -366,7 +366,7 @@ export default function UsuariosPage() {
                         <div className="flex-shrink-0 h-10 w-10">
                           <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
                             <span className="text-blue-600 font-semibold">
-                              {/* Verificar se full_name existe */}
+                    
                               {user.full_name ? user.full_name.charAt(0).toUpperCase() : "?"}
                             </span>
                           </div>
@@ -540,6 +540,18 @@ export default function UsuariosPage() {
                     className="mr-2"
                   />
                   <span className="text-sm">Usuário Ativo</span>
+                </label>
+
+                <label className="flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={formData.is_verified}
+                    onChange={(e) =>
+                      setFormData({ ...formData, is_verified: e.target.checked })
+                    }
+                    className="mr-2"
+                  />
+                  <span className="text-sm">Verificado</span>
                 </label>
 
                 <label className="flex items-center">
