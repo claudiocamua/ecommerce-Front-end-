@@ -36,12 +36,13 @@ export const authService = {
   logout() {
     localStorage.removeItem("access_token");
     localStorage.removeItem("user_id");
-    console.log(" [AUTH SERVICE] Logout - localStorage limpo");
+    localStorage.removeItem("user"); 
+    console.log("  [AUTH SERVICE] Logout - localStorage limpo");
   },
 
   getToken() {
-    const token = localStorage.getItem("access_token"); 
-    console.log(" [AUTH SERVICE] getToken:", token ? token.substring(0, 20) + "..." : "null");
+    const token = localStorage.getItem("access_token");
+    console.log("  [AUTH SERVICE] getToken:", token ? token.substring(0, 20) + "..." : "null");
     return token;
   },
 
@@ -63,8 +64,22 @@ export const authService = {
 
   saveUser(user: any) {
     localStorage.setItem("user_id", user.id || user.user_id);
-    localStorage.setItem("user_email", user.email);
-    localStorage.setItem("user_name", user.name || user.full_name);
+    localStorage.setItem("user", JSON.stringify(user)); 
     console.log("  [AUTH SERVICE] saveUser (OAuth):", user);
+  },
+
+  getUser() {
+    try {
+      const userString = localStorage.getItem("user");
+      if (userString) {
+        const user = JSON.parse(userString);
+        console.log(" [AUTH SERVICE] User do localStorage:", user);
+        return user;
+      }
+      return null;
+    } catch (error) {
+      console.error("  [AUTH SERVICE] Erro ao parsear user:", error);
+      return null;
+    }
   },
 };
