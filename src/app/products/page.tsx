@@ -191,9 +191,10 @@ function ProductsContent() {
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-br from-gray-900 via-black to-gray-900">
       <Navbar />
-
+      
       <main className="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full mt-20">
         <div className="text-center mb-8">
+          <br /><br /><br />
           <h1 className="text-4xl md:text-5xl font-bold text-yellow-400 mb-3">
             Todos os Produtos
           </h1>

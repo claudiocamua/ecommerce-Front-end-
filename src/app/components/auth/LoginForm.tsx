@@ -45,7 +45,6 @@ export default function LoginForm() {
       console.log(" [LOGIN] Login bem-sucedido!");
 
       toast.success("Login realizado com sucesso! Redirecionando...");
-      // Redirecionar após 1 segundo
       setTimeout(() => {
         window.location.href = "/dashboard";
       }, 1000);
@@ -85,12 +84,12 @@ export default function LoginForm() {
   };
   
   const handleGoogleSignIn = () => {
+    console.log(" [GOOGLE LOGIN] Redirecionando para backend OAuth...");
     window.location.href = `${API_URL}/auth/google/login`;
   };
 
   return (
     <div className="space-y-4">
-      {/* Mensagem de erro persistente */}
       {error && (
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-2">
           <svg

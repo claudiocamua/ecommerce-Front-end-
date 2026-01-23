@@ -51,11 +51,6 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
   const userFirstName = userName.split(" ")[0];
   const isAdmin = user?.is_admin === true;
 
-  console.log("🔍 [NAVBAR] Dados completos do user:", user);
-  console.log("🔍 [NAVBAR] user.is_admin:", user?.is_admin);
-  console.log("🔍 [NAVBAR] Tipo de is_admin:", typeof user?.is_admin);
-  console.log("🔍 [NAVBAR] isAdmin calculado:", isAdmin);
-
   if (!isMounted) {
     return (
       <nav className="fixed top-0 left-0 right-0 z-50 bg-cartao border-b border-borda shadow-md">

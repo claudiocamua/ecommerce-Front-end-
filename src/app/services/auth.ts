@@ -1,125 +1,70 @@
 import api from "./api";
 
-interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
 interface LoginResponse {
   access_token: string;
   token_type: string;
-  user?: any;
+  user_id: string;
 }
 
-class AuthService {
+export const authService = {
   async login(email: string, password: string) {
-    const response = await api.post("/auth/login", { email, password });
-    const { access_token, user } = response.data;
+    const response = await api.post<LoginResponse>("/auth/login", {
+      email,
+      password,
+    });
 
-    const userData = {
-      ...user,
-      is_admin: user.is_admin === true || user.is_admin === "true",
-    };
+    if (response.data.access_token) {
+      localStorage.setItem("access_token", response.data.access_token);
+      localStorage.setItem("user_id", response.data.user_id);
+      console.log("  [AUTH SERVICE] Token salvo:", response.data.access_token.substring(0, 20) + "...");
+    }
 
-    console.log(" [LOGIN] User do backend:", user);
-    console.log(" [LOGIN] is_admin original:", user.is_admin);
-    console.log(" [LOGIN] User convertido:", userData);
+    return response.data;
+  },
 
-    localStorage.setItem("access_token", access_token);
-    localStorage.setItem("user", JSON.stringify(userData));
+  async register(userData: any) {
+    const response = await api.post("/auth/register", userData);
+    
+    if (response.data.access_token) {
+      localStorage.setItem("access_token", response.data.access_token);
+      localStorage.setItem("user_id", response.data.user_id);
+    }
+    
+    return response.data;
+  },
 
-    return { access_token, user: userData };
-  }
+  logout() {
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("user_id");
+    console.log(" [AUTH SERVICE] Logout - localStorage limpo");
+  },
+
+  getToken() {
+    const token = localStorage.getItem("access_token"); 
+    console.log(" [AUTH SERVICE] getToken:", token ? token.substring(0, 20) + "..." : "null");
+    return token;
+  },
+
+  isAuthenticated() {
+    const hasToken = !!this.getToken();
+    console.log("  [AUTH SERVICE] isAuthenticated:", hasToken);
+    return hasToken;
+  },
 
   async getProfile() {
     const response = await api.get("/auth/me");
     return response.data;
-  }
+  },
 
   saveToken(token: string) {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("access_token", token);
-    }
-  }
-
-  getToken() {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("access_token");
-    }
-    return null;
-  }
+    localStorage.setItem("access_token", token);
+    console.log("  [AUTH SERVICE] saveToken (OAuth):", token.substring(0, 20) + "...");
+  },
 
   saveUser(user: any) {
-    if (typeof window !== "undefined") {
-      const userData = {
-        ...user,
-        is_admin: user.is_admin === true || user.is_admin === "true",
-      };
-      localStorage.setItem("user", JSON.stringify(userData));
-    }
-  }
-
-  getUser() {
-    if (typeof window === "undefined") return null;
-
-    const userStr = localStorage.getItem("user");
-    if (!userStr) return null;
-
-    try {
-      const user = JSON.parse(userStr);
-
-      //CONVERTER is_admin PARA BOOLEAN VERDADEIRO
-      const isAdmin = user.is_admin === true || user.is_admin === "true";
-
-      console.log(" [AUTH SERVICE] User do localStorage:", user);
-      console.log(" [AUTH SERVICE] is_admin ORIGINAL:", user.is_admin);
-      console.log(" [AUTH SERVICE] Tipo ORIGINAL:", typeof user.is_admin);
-      console.log(" [AUTH SERVICE] isAdmin CONVERTIDO:", isAdmin);
-
-      return {
-        ...user,
-        is_admin: isAdmin,
-      };
-    } catch (error) {
-      console.error(" Erro ao parsear usuário:", error);
-      return null;
-    }
-  }
-
-  logout() {
-    if (typeof window !== "undefined") {
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("user");
-      window.location.href = "/";
-    }
-  }
-
-  isAuthenticated() {
-    const token = this.getToken();
-    console.log(" [AUTH] isAuthenticated - Token:", !!token);
-    return !!token;
-  }
-
-  async register(data: {
-    email: string;
-    password: string;
-    full_name: string;
-  }): Promise<{ access_token: string; user: any }> {
-    try {
-      const response = await api.post("/auth/register", data);
-
-      // Salvar token e usuário
-      if (response.data.access_token) {
-        this.saveToken(response.data.access_token);
-        this.saveUser(response.data.user);
-      }
-
-      return response.data;
-    } catch (error: any) {
-      console.error("Erro ao registrar:", error);
-      throw error;
-    }
-  }
-}
-
-export const authService = new AuthService();
+    localStorage.setItem("user_id", user.id || user.user_id);
+    localStorage.setItem("user_email", user.email);
+    localStorage.setItem("user_name", user.name || user.full_name);
+    console.log("  [AUTH SERVICE] saveUser (OAuth):", user);
+  },
+};

@@ -1,32 +1,35 @@
 import axios from 'axios';
 import { authStorage } from '@/lib/auth';
 
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
-  headers: {
-    'Content-Type': 'application/json',
-  },
+  baseURL,
+  headers: { 'Content-Type': 'application/json' },
 });
 
-//INTERCEPTOR PARA ADICIONAR TOKEN
 api.interceptors.request.use(
   (config) => {
-    const token = authStorage.getToken();
-    
-    console.log(' [AXIOS] URL:', config.url);
-    console.log(' [AXIOS] Token encontrado:', !!token);
-    
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-      console.log(' [AXIOS] Token adicionado!');
-    } else {
-      console.warn(' [AXIOS] Nenhum token encontrado no localStorage!');
+    if (typeof window !== 'undefined') {
+      const token = authStorage.getToken();
+      if (token) {
+        config.headers = config.headers || {};
+        config.headers['Authorization'] = `Bearer ${token}`;
+      }
     }
-    
     return config;
   },
+  (err) => Promise.reject(err)
+);
+
+api.interceptors.response.use(
+  (res) => res,
   (error) => {
-    console.error(' [AXIOS] Erro no interceptor:', error);
+    const status = error?.response?.status;
+    if (status === 401 && typeof window !== 'undefined') {
+      authStorage.clear();
+      window.dispatchEvent(new CustomEvent('logout'));
+    }
     return Promise.reject(error);
   }
 );

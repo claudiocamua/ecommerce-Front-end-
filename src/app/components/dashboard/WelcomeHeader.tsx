@@ -10,9 +10,6 @@ export default function WelcomeHeader({ userName }: WelcomeHeaderProps) {
       <h1 className="text-1xl md:text-1xl font-bold mb-2">
         Olá, {userName}! 
       </h1>
-      <p className="text-primario-light opacity-90">
-        Bem-vindo à sua área exclusiva
-      </p>
     </div>
   );
 }

@@ -61,7 +61,7 @@ export const authOptions: NextAuthOptions = {
           const data = await response.json();
 
           if (response.ok && data.access_token) {
-            // Retornar user object com accessToken
+            console.log("[NEXTAUTH AUTHORIZE] access_token recebido:", data.access_token.substring(0, 20) + "...");
             return {
               id: data.user_id,
               email: credentials.email,
@@ -80,31 +80,31 @@ export const authOptions: NextAuthOptions = {
 
   callbacks: {
     async signIn({ user, account }) {
+      console.log("[NEXTAUTH SIGNIN] provider:", account?.provider, "user:", user);
+      
       if (account?.provider === "google") {
         try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/auth/google`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                token: account.id_token,
-              }),
-            }
-          );
+          const url = `${process.env.NEXT_PUBLIC_API_URL}/auth/google/callback?token=${encodeURIComponent(account.id_token || '')}`;
+          console.log("[NEXTAUTH SIGNIN GOOGLE] Chamando GET:", url.substring(0, 100) + "...");
+          
+          const response = await fetch(url, {
+            method: "GET", 
+          });
 
           const data = await response.json();
+          console.log("[NEXTAUTH SIGNIN GOOGLE] Status:", response.status, "Resposta:", data);
 
           if (response.ok && data.access_token) {
-            // Armazenar token no user object
             user.accessToken = data.access_token;
             user.id = data.user_id;
+            console.log("[NEXTAUTH SIGNIN GOOGLE]  access_token salvo:", user.accessToken.substring(0, 20) + "...");
             return true;
           }
 
+          console.error("[NEXTAUTH SIGNIN GOOGLE]  Erro:", response.status, data);
           return false;
         } catch (error) {
-          console.error("Erro no signIn:", error);
+          console.error("[NEXTAUTH SIGNIN GOOGLE]  Exceção:", error);
           return false;
         }
       }
@@ -112,18 +112,22 @@ export const authOptions: NextAuthOptions = {
       return true;
     },
 
-    async jwt({ token, user }) {
+    async jwt({ token, user, account }) {
+      console.log("[NEXTAUTH JWT] user:", user, "token antes:", token);
       if (user) {
         token.accessToken = user.accessToken;
         token.id = user.id;
+        console.log("[NEXTAUTH JWT] token.accessToken atualizado:", token.accessToken?.substring(0, 20) + "...");
       }
       return token;
     },
 
     async session({ session, token }) {
+      console.log("[NEXTAUTH SESSION] token:", token, "session antes:", session);
       if (token) {
         session.accessToken = token.accessToken;
         session.user.id = token.id as string;
+        console.log("[NEXTAUTH SESSION] session.accessToken definido:", session.accessToken?.substring(0, 20) + "...");
       }
       return session;
     },
@@ -138,6 +142,8 @@ export const authOptions: NextAuthOptions = {
   },
 
   secret: process.env.NEXTAUTH_SECRET,
+
+  debug: true,
 };
 
 const handler = NextAuth(authOptions);
