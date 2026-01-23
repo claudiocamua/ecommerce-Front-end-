@@ -5,12 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "react-hot-toast";
 import { authService } from "@/app/services/auth";
-import WelcomeHeader from "./WelcomeHeader";
 
 import {
   Menu,
   X,
-  Home,
   ShoppingBag,
   ShoppingCart,
   Package,
@@ -93,7 +91,6 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                 MinhaLoja.
               </span>
             </Link>
-            <WelcomeHeader userName={userName} />
 
             <div className="hidden md:flex items-center gap-6">
               <Link href="/profile" className="nav-link flex items-center gap-2" prefetch={false}>
@@ -114,7 +111,6 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                   href="/admin" 
                   className="nav-link flex items-center gap-2 text-yellow-400 hover:text-yellow-500 font-bold"
                   prefetch={false}
-                  onClick={() => console.log(" Clicou em Admin - isAdmin:", isAdmin)}
                 >
                   <Shield size={20} /> Admin
                 </Link>
@@ -180,10 +176,7 @@ export default function NavbarDashboard({ user }: NavbarDashboardProps) {
                         href="/admin"
                         className="dropdown-item flex items-center gap-2 text-yellow-600 border-t border-borda"
                         prefetch={false}
-                        onClick={() => {
-                          setIsProfileOpen(false);
-                          console.log(" Clicou em Admin (dropdown) - isAdmin:", isAdmin);
-                        }}
+                        onClick={() => setIsProfileOpen(false)}
                       >
                         <Shield size={16} /> Administração
                       </Link>
